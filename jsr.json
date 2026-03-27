@@ -2,5 +2,14 @@
 	"name": "@quentinroy/custom-element-mixins",
 	"version": "0.1.0",
 	"license": "MIT",
-	"exports": "./source/index.ts"
+	"exports": "./source/index.ts",
+	"publish": {
+		"include": [
+			"LICENSE",
+			"README.md",
+			"source/**/*.ts",
+			"!source/**/*.test-d.ts",
+			"!source/**/*.spec.ts"
+		]
+	}
 }
