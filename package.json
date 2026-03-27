@@ -1,0 +1,12 @@
+{
+	"name": "@quentinroy/custom-element-mixins",
+	"type": "module",
+	"scripts": {
+		"test": "vitest --typecheck"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.9",
+		"typescript": "~6.0.2",
+		"vitest": "^4.1.2"
+	}
+}
