@@ -14,9 +14,9 @@ export type Simplify<T> = {
  * @typeParam T The instance type produced by the constructor.
  * @typeParam Arguments The constructor parameter tuple.
  */
-export type Constructor<T, Arguments extends unknown[] = []> = new (
-	...args: Arguments
-) => T
+export interface Constructor<T, Arguments extends unknown[] = []> {
+	new (...args: Arguments): T
+}
 
 /**
  * Type-level equality check.
@@ -91,4 +91,4 @@ export function toKebabCase(str: string): string {
 export class Empty {}
 
 // biome-ignore lint/suspicious/noExplicitAny: Any constructor is allowed.
-export type AnyConstructor = Constructor<object, any[]>
+export interface AnyConstructor extends Constructor<object, any[]> {}

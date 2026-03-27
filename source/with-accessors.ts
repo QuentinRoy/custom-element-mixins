@@ -29,7 +29,7 @@ export type Accessors<
  * @typeParam GetValue Type returned by `get`.
  * @typeParam SetValue Type accepted by `set`.
  */
-export type Accessor<This, GetValue, SetValue = GetValue> = {
+export interface Accessor<This, GetValue, SetValue = GetValue> {
 	/** Reads the computed property value from the instance. */
 	get: (this: This) => GetValue
 	/**
@@ -182,27 +182,27 @@ type PropsFromAccessors<T> = Simplify<
 	}
 >
 
-type UnconstrainedAccessor<GetValue, SetValue = GetValue> = {
+interface UnconstrainedAccessor<GetValue, SetValue = GetValue> {
 	get: () => GetValue
 	set?: (value: SetValue) => void
 }
 
-type UnboundReadonlyAccessor<GetValue> = {
+interface UnboundReadonlyAccessor<GetValue> {
 	get: () => GetValue
 	set?: undefined
 }
 
-type UnboundWritableAccessor<GetValue, SetValue = GetValue> = {
+interface UnboundWritableAccessor<GetValue, SetValue = GetValue> {
 	get: () => GetValue
 	set: (value: SetValue) => void
 }
 
-type ReadonlyAccessor<This, GetValue> = {
+interface ReadonlyAccessor<This, GetValue> {
 	get: (this: This) => GetValue
 	set?: undefined
 }
 
-type WritableAccessor<This, GetValue, SetValue = GetValue> = {
+interface WritableAccessor<This, GetValue, SetValue = GetValue> {
 	get: (this: This) => GetValue
 	set: (this: This, value: SetValue) => void
 }
