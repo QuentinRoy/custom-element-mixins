@@ -175,7 +175,7 @@ export function number({
 			if (value == null) return defaultValue
 			let parsed = Number(value)
 			if (Number.isNaN(parsed)) {
-				throw new Error(`Expected attribute to be a number, got "${value}"`)
+				value = null
 			}
 			return value == null ? defaultValue : Number(value)
 		},

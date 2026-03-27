@@ -123,7 +123,7 @@ const WithCustom = WithAttributeProps(HTMLElement, {
 
 - `number()` -> prop type: `number | null`
 - `number({ default: n })` -> prop type: `number`
-- Throws if attribute value is not numeric.
+- If attribute value is missing or invalid, parse returns the default when provided, otherwise `null`.
 
 ## `string(options?)`
 
