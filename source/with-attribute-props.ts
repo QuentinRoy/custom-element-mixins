@@ -168,15 +168,15 @@ export interface AttributeSerializer<This, GetValue, SetValue = GetValue> {
 	/**
 	 * Parses a raw attribute string (or null when absent) into a property value.
 	 *
-	 * @param a Raw attribute value.
+	 * @param attributeValue Raw attribute value.
 	 */
-	parse: (this: This, a: string | null) => GetValue
+	parse: (this: This, attributeValue: string | null) => GetValue
 	/**
 	 * Serializes a property value to an attribute string, or null to remove it.
 	 *
-	 * @param value Property value to serialize.
+	 * @param propValue Property value to serialize.
 	 */
-	serialize: (this: This, value: SetValue) => string | null
+	serialize: (this: This, propValue: SetValue) => string | null
 }
 
 type SerializerThis<This, AccessorProps> = Simplify<
