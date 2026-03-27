@@ -11,3 +11,9 @@
 ### Minor Changes
 
 - Exported `WithAttributePropsConstructor` and `WithAccessorsConstructor` types for better type inference when using the mixins.
+
+## 0.3.1
+
+### Patch Changes
+
+- Switch to `interface` (instead of `type`) when possible. None of these types are exported so this is a non-breaking change. It may slightly improve speed of type checking in some cases.
