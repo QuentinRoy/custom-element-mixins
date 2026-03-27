@@ -67,6 +67,34 @@ counter.doubled = 10;
 // counter.doubled === 10
 ```
 
+You can also use the higher-order class directly in `extends`:
+
+```ts
+import { WithAccessors } from "jsr:@quentinroy/custom-element-mixins";
+
+class Counter extends WithAccessors(class {
+  count = 0;
+}, {
+  doubled: {
+    get() {
+      return this.count * 2;
+    },
+    set(value: number) {
+      this.count = Math.floor(value / 2);
+    },
+  },
+}) {
+  increment() {
+    this.count += 1;
+    return this.doubled;
+  }
+}
+
+const counter = new Counter();
+counter.doubled = 10;
+counter.increment();
+```
+
 Notes:
 
 - Accessors are enumerable.
@@ -86,9 +114,7 @@ Property names are converted to kebab-case attribute names (`myAttr` -> `my-attr
 ```ts
 import { WithAttributeProps, number, string, boolean, pickList } from "jsr:@quentinroy/custom-element-mixins";
 
-class MyElement extends HTMLElement {}
-
-const WithProps = WithAttributeProps(MyElement, {
+const WithProps = WithAttributeProps(HTMLElement, {
   page: number({ default: 1 }),
   bookTitle: string(),
   open: boolean(),
@@ -99,6 +125,41 @@ const el = new WithProps();
 el.page = 3;          // sets attribute page="3"
 el.open = true;       // sets attribute open=""
 el.bookTitle = null;  // removes attribute book-title
+el.variant = "secondary";
+```
+
+You can also use the higher-order class directly in `extends`:
+
+```ts
+import { WithAttributeProps, number, string, boolean, pickList } from "jsr:@quentinroy/custom-element-mixins";
+
+class HTMLBookCardElement extends WithAttributeProps(HTMLElement, {
+  page: number({ default: 1 }),
+  bookTitle: string(),
+  open: boolean(),
+  variant: pickList({ values: ["primary", "secondary"], default: "primary" }),
+}) {
+  static get observedAttributes() {
+    return ["page", "book-title", "open", "variant"];
+  }
+
+  connectedCallback() {
+    this.#render();
+  }
+
+  attributeChangedCallback() {
+    this.#render();
+  }
+
+  #render() {
+    this.textContent = `${this.bookTitle} (page ${this.page}) - ${this.variant}`;
+  }
+}
+
+const el = new HTMLBookCardElement();
+el.page = 3;
+el.open = true;
+el.bookTitle = null;
 el.variant = "secondary";
 ```
 
