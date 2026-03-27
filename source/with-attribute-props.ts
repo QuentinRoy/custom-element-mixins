@@ -29,10 +29,24 @@ type BindSerializerHelper<This, InnerSerializer, AccessorProps> = {
 		: InnerSerializer[Key]
 }
 
-interface WithAttributePropsConstructor<
+/**
+ * Constructor type returned by WithAttributeProps.
+ *
+ * Instances preserve the base instance shape and add property types inferred
+ * from the provided attribute serializers.
+ *
+ * @typeParam Base Base constructor being extended.
+ * @typeParam InnerSerializer Serializer map used to derive added properties.
+ */
+export interface WithAttributePropsConstructor<
 	Base extends Constructor<object>,
 	InnerSerializer,
 > {
+	/**
+	 * Creates an instance with typed property-to-attribute mappings.
+	 *
+	 * @param args Arguments forwarded to the base constructor.
+	 */
 	new (
 		...args: ConstructorParameters<Base>
 	): Simplify<InstanceType<Base> & PropsFromSerializer<InnerSerializer>>
@@ -151,7 +165,17 @@ interface UnboundSerializer<GetValue, SetValue = GetValue> {
  * @typeParam SetValue Type accepted by `serialize`.
  */
 export interface AttributeSerializer<This, GetValue, SetValue = GetValue> {
+	/**
+	 * Parses a raw attribute string (or null when absent) into a property value.
+	 *
+	 * @param a Raw attribute value.
+	 */
 	parse: (this: This, a: string | null) => GetValue
+	/**
+	 * Serializes a property value to an attribute string, or null to remove it.
+	 *
+	 * @param value Property value to serialize.
+	 */
 	serialize: (this: This, value: SetValue) => string | null
 }
 

@@ -30,7 +30,13 @@ export type Accessors<
  * @typeParam SetValue Type accepted by `set`.
  */
 export type Accessor<This, GetValue, SetValue = GetValue> = {
+	/** Reads the computed property value from the instance. */
 	get: (this: This) => GetValue
+	/**
+	 * Writes a new value to the instance. Omit for readonly accessors.
+	 *
+	 * @param value New value to assign.
+	 */
 	set?: (this: This, value: SetValue) => void
 }
 
@@ -90,10 +96,24 @@ type ProtectAccessors<InnerAccessors> = {
 	}
 }
 
+/**
+ * Constructor type returned by WithAccessors.
+ *
+ * Instances preserve the base instance shape and add the accessor-backed
+ * properties inferred from the provided accessor map.
+ *
+ * @typeParam Base Base constructor being extended.
+ * @typeParam InnerAccessors Accessor map used to derive added properties.
+ */
 export interface WithAccessorsConstructor<
 	Base extends Constructor<object>,
 	InnerAccessors,
 > {
+	/**
+	 * Creates an instance that combines base members with accessor-backed props.
+	 *
+	 * @param args Arguments forwarded to the base constructor.
+	 */
 	new (
 		...args: ConstructorParameters<Base>
 	): Merge<
