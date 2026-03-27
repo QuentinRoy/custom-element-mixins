@@ -98,7 +98,6 @@ test("Type of HtmlAttributeDescriptor", () => {
 		AttributeSerializer<unknown, "a" | "b" | "c">
 	>()
 	expectTypeOf<D>().not.toMatchTypeOf<AttributeSerializer<unknown, "b">>()
-	// FIXME: This should not be an error
 	expectTypeOf<D>().not.toMatchTypeOf<
 		AttributeSerializer<unknown, "a" | "b" | "c" | "other one">
 	>()

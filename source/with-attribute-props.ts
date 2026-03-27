@@ -139,8 +139,17 @@ interface UnboundSerializer<GetValue, SetValue = GetValue> {
 	serialize: (value: SetValue) => string | null
 }
 
-// I wish I could use Simplify here, but it seems to be breaking the type of
-// this of the attribute serializers parameter....
+/**
+ * Describes how a property is read from and written to an attribute.
+ *
+ * `parse` receives the raw attribute value and returns the property value.
+ * `serialize` receives the property value and returns the attribute string to
+ * store, or `null` to remove the attribute.
+ *
+ * @typeParam This Type of `this` inside the serializer functions.
+ * @typeParam GetValue Type returned by `parse`.
+ * @typeParam SetValue Type accepted by `serialize`.
+ */
 export interface AttributeSerializer<This, GetValue, SetValue = GetValue> {
 	parse: (this: This, a: string | null) => GetValue
 	serialize: (this: This, value: SetValue) => string | null
@@ -159,6 +168,16 @@ type AccessorsFromSerializers<D> = {
 		: never
 }
 
+/**
+ * Creates an attribute serializer for numeric props.
+ *
+ * `parse` converts the attribute string to a number.
+ * When the attribute is missing, or is not a valid number, it returns the
+ * provided default or `null`.
+ *
+ * @param options Configuration for the serializer.
+ * @param options.default Value returned when the attribute is missing or invalid.
+ */
 export function number(options: {
 	default: number
 }): AttributeSerializer<unknown, number, number>
@@ -185,6 +204,15 @@ export function number({
 	}
 }
 
+/**
+ * Creates an attribute serializer for string props.
+ *
+ * `parse` returns the attribute value as-is, or the provided default when the
+ * attribute is missing.
+ *
+ * @param options Configuration for the serializer.
+ * @param options.default Value returned when the attribute is missing.
+ */
 export function string(options: {
 	default: string
 }): AttributeSerializer<unknown, string, string>
@@ -206,6 +234,14 @@ export function string({
 	}
 }
 
+/**
+ * Creates a presence-based boolean attribute serializer.
+ *
+ * `parse` returns `true` when the attribute exists and `false` otherwise.
+ * `serialize` maps `true` to an empty string and `false` to `null`.
+ *
+ * @param _options Reserved for API consistency. No options are currently supported.
+ */
 export function boolean(
 	_options: Record<PropertyKey, never> = {},
 ): AttributeSerializer<unknown, boolean, boolean> {
@@ -219,6 +255,16 @@ export function boolean(
 	}
 }
 
+/**
+ * Creates a serializer constrained to a fixed list of string values.
+ *
+ * If the attribute is missing, or has a value outside `options.values`,
+ * `parse` returns the provided default or `null`.
+ *
+ * @param options Configuration for the serializer.
+ * @param options.values Allowed string values.
+ * @param options.default Value returned when the attribute is missing or invalid.
+ */
 export function pickList<const K extends string>(options: {
 	default?: undefined
 	values: Readonly<Array<K>>

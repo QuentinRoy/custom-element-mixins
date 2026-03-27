@@ -7,11 +7,28 @@ import type {
 	Simplify,
 } from "./utils.ts"
 
+/**
+ * Describes a map of property accessors that can be passed to `WithAccessors`.
+ *
+ * Keys are interpreted as property names. Writable properties produce accessors
+ * with both `get` and `set`; readonly properties produce getter-only accessors.
+ * When `This` is provided, accessor `this` is bound to the final instance type.
+ *
+ * @typeParam M Property map to describe through accessors.
+ * @typeParam This Constructor whose instance type should be used as `this`.
+ */
 export type Accessors<
 	M extends Record<PropertyKey, unknown> = Record<PropertyKey, unknown>,
 	This extends AnyConstructor = AnyConstructor,
 > = BindAccessors<This, UnboundAccessors<M>>
 
+/**
+ * Describes a single property accessor.
+ *
+ * @typeParam This Type of `this` inside the accessor functions.
+ * @typeParam GetValue Type returned by `get`.
+ * @typeParam SetValue Type accepted by `set`.
+ */
 export type Accessor<This, GetValue, SetValue = GetValue> = {
 	get: (this: This) => GetValue
 	set?: (this: This, value: SetValue) => void
