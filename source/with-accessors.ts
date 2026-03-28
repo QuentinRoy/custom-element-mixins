@@ -26,8 +26,7 @@ export type Accessors<
  * Describes a single property accessor.
  *
  * @typeParam This Type of `this` inside the accessor functions.
- * @typeParam GetValue Type returned by `get`.
- * @typeParam SetValue Type accepted by `set`.
+ * @typeParam Value Type returned by `get` and accepted by `set`.
  */
 export interface Accessor<This, Value> {
 	/** Reads the computed property value from the instance. */
@@ -82,6 +81,11 @@ type UnboundAccessors<M extends object> = Simplify<
 	}
 >
 
+/**
+ * Descriptor flags accepted by `WithAccessors` in addition to `get`/`set`.
+ *
+ * Any other descriptor property is intentionally rejected.
+ */
 interface StrictAccessorBase {
 	enumerable?: true
 	value?: undefined
