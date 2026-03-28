@@ -1,72 +1,29 @@
-import { type Constructor, type Simplify, toKebabCase } from "./utils.ts"
+import { type Constructor, toKebabCase } from "./utils.ts"
 import { WithAccessors } from "./with-accessors.ts"
+import type {
+	AccessorsFromSerializers,
+	AttributeSerializer,
+	AttributeTarget,
+	BindSerializers,
+	StrictSerializers,
+	UnconstrainedSerializer,
+	WithAttributePropsConstructor,
+} from "./with-attribute-props.types.ts"
 
-type BindSerializer<
+export type {
+	AttributeSerializer,
+	WithAttributePropsConstructor,
+} from "./with-attribute-props.types.ts"
+
+type PreparedSerializers<
 	Base extends Constructor<object>,
-	InnerSerializer,
-> = BindSerializerHelper<
-	InstanceType<Base>,
-	InnerSerializer,
-	PropsFromSerializer<InnerSerializer>
->
+	InnerSerializers,
+> = StrictSerializers<BindSerializers<Base, InnerSerializers>>
 
-type BindSerializerHelper<This, InnerSerializer, AccessorProps> = {
-	[Key in keyof InnerSerializer]: InnerSerializer[Key] extends UnboundSerializer<
-		infer GetValue,
-		infer SetValue
-	>
-		? Key extends keyof This
-			? AttributeSerializer<
-					SerializerThis<This, AccessorProps>,
-					GetValue & This[Key],
-					SetValue | This[Key]
-				>
-			: AttributeSerializer<
-					SerializerThis<This, AccessorProps>,
-					GetValue,
-					SetValue
-				>
-		: InnerSerializer[Key]
-}
-
-type StrictSerializers<InnerSerializer> = {
-	[K in keyof InnerSerializer]: ValidateSerializer<InnerSerializer[K]>
-}
-
-type ValidateSerializer<S> = S extends {
-	parse: (attributeValue: string | null) => infer GetValue
-	serialize: (this: infer This, propValue: infer SetValue) => string | null
-}
-	? Omit<S, "serialize"> & {
-			serialize: (
-				this: This,
-				propValue: GetValue | SetValue,
-			) => string | null
-		}
-	: S
-
-/**
- * Constructor type returned by WithAttributeProps.
- *
- * Instances preserve the base instance shape and add property types inferred
- * from the provided attribute serializers.
- *
- * @typeParam Base Base constructor being extended.
- * @typeParam InnerSerializer Serializer map used to derive added properties.
- */
-export interface WithAttributePropsConstructor<
+type AttributePropAccessors<
 	Base extends Constructor<object>,
-	InnerSerializer,
-> {
-	/**
-	 * Creates an instance with typed property-to-attribute mappings.
-	 *
-	 * @param args Arguments forwarded to the base constructor.
-	 */
-	new (
-		...args: ConstructorParameters<Base>
-	): Simplify<InstanceType<Base> & PropsFromSerializer<InnerSerializer>>
-}
+	InnerSerializers,
+> = AccessorsFromSerializers<PreparedSerializers<Base, InnerSerializers>>
 
 /**
  * Mixin that adds props mapped to attributes to a class, typically an HTMLElement.
@@ -89,17 +46,15 @@ export function WithAttributeProps<
 	// preserved if it was not explicitly defined in Serializer.
 	// Bounding it again allows this to be properly inferred when accessors is
 	// provided inline without needing to explicitly define it.
-	serializers: StrictSerializers<BindSerializer<Base, InnerSerializer>>,
+	serializers: PreparedSerializers<Base, InnerSerializer>,
 ): WithAttributePropsConstructor<Base, InnerSerializer> {
-	let accessors = createAccessors(serializers)
-	// @ts-expect-error - This is fine, the types are just too complex for TypeScript to understand.
-	return WithAccessors(Base, accessors)
+	let accessors: AttributePropAccessors<Base, InnerSerializer> =
+		createAccessors(serializers)
+	return WithAccessors(Base, accessors) as WithAttributePropsConstructor<
+		Base,
+		InnerSerializer
+	>
 }
-
-type AttributeTarget = Pick<
-	HTMLElement,
-	"getAttribute" | "setAttribute" | "removeAttribute"
->
 
 function createAccessors<
 	InnerSerializers extends Record<
@@ -140,74 +95,6 @@ function createAccessor(
 			}
 		},
 	}
-}
-
-type PropsFromSerializer<T> = Simplify<{
-	[K in keyof T as T[K] extends AttributeSerializer<
-		infer _1,
-		infer _2,
-		infer _3
-	>
-		? K
-		: never]: T[K] extends AttributeSerializer<
-		infer _1,
-		infer _2,
-		infer SetValue
-	>
-		? SetValue
-		: never
-}>
-
-// I am not sure why, but it does seem that at least serialize
-// must be made optional here. It may be because of the serialize protection
-// there is in the Serializer type.
-interface UnconstrainedSerializer<GetValue, SetValue> {
-	parse?: (a: string | null) => GetValue
-	serialize?: (value: SetValue) => string | null
-}
-
-interface UnboundSerializer<GetValue, SetValue = GetValue> {
-	parse: (a: string | null) => GetValue
-	serialize: (value: SetValue) => string | null
-}
-
-/**
- * Describes how a property is read from and written to an attribute.
- *
- * `parse` receives the raw attribute value and returns the property value.
- * `serialize` receives the property value and returns the attribute string to
- * store, or `null` to remove the attribute.
- *
- * @typeParam This Type of `this` inside the serializer functions.
- * @typeParam GetValue Type returned by `parse`.
- * @typeParam SetValue Type accepted by `serialize`.
- */
-export interface AttributeSerializer<This, GetValue, SetValue = GetValue> {
-	/**
-	 * Parses a raw attribute string (or null when absent) into a property value.
-	 *
-	 * @param attributeValue Raw attribute value.
-	 */
-	parse: (this: This, attributeValue: string | null) => GetValue
-	/**
-	 * Serializes a property value to an attribute string, or null to remove it.
-	 *
-	 * @param propValue Property value to serialize.
-	 */
-	serialize: (this: This, propValue: SetValue) => string | null
-}
-
-type SerializerThis<This, AccessorProps> = Simplify<
-	Omit<This, keyof AccessorProps> & AccessorProps
->
-
-type AccessorsFromSerializers<D> = {
-	[K in keyof D]: D[K] extends UnconstrainedSerializer<infer P, infer S>
-		? {
-				get(this: AttributeTarget): P
-				set(this: AttributeTarget, value: S): void
-			}
-		: never
 }
 
 /**
