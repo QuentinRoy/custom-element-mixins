@@ -82,11 +82,11 @@ test("Type of WithAttributeProps forbidden asymmetric parameters", () => {
 	}
 
 	const Forbidden = WithAttributeProps(AttributeTarget, {
-		// @ts-expect-error setter must accept all values returned by getter.
 		attr: {
 			parse(_value: string | null): "a" | "b" {
 				return "a"
 			},
+			// @ts-expect-error serialize must accept all values returned by parse.
 			serialize(value: "a"): string | null {
 				return value
 			},

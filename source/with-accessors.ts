@@ -40,7 +40,7 @@ export interface Accessor<This, GetValue, SetValue = GetValue> {
 	set?: (this: This, value: SetValue) => void
 }
 
-export type BindAccessors<
+type BindAccessors<
 	Base extends AnyConstructor,
 	InnerAccessors,
 > = BindAccessorsHelper<
@@ -104,13 +104,14 @@ type StrictAccessors<InnerAccessors> = {
 		StrictAccessorBase
 }
 
-type ValidateAccessor<A> = [A] extends [
-	UnconstrainedAccessor<infer GetValue, infer SetValue>,
-]
-	? [GetValue] extends [SetValue]
-		? A
-		: never
-	: never
+type ValidateAccessor<A> = A extends {
+	get: (...args: []) => infer GetValue
+	set: (this: infer This, value: infer SetValue) => void
+}
+	? Omit<A, "set"> & {
+			set: (this: This, value: GetValue | SetValue) => void
+		}
+	: A
 
 /**
  * Constructor type returned by WithAccessors.

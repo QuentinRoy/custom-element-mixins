@@ -33,13 +33,17 @@ type StrictSerializers<InnerSerializer> = {
 	[K in keyof InnerSerializer]: ValidateSerializer<InnerSerializer[K]>
 }
 
-type ValidateSerializer<S> = [S] extends [
-	UnconstrainedSerializer<infer GetValue, infer SetValue>,
-]
-	? [GetValue] extends [SetValue]
-		? S
-		: never
-	: never
+type ValidateSerializer<S> = S extends {
+	parse: (attributeValue: string | null) => infer GetValue
+	serialize: (this: infer This, propValue: infer SetValue) => string | null
+}
+	? Omit<S, "serialize"> & {
+			serialize: (
+				this: This,
+				propValue: GetValue | SetValue,
+			) => string | null
+		}
+	: S
 
 /**
  * Constructor type returned by WithAttributeProps.

@@ -86,12 +86,6 @@ test("type of WithAccessors accessors argument", () => {
 				return 1
 			},
 		},
-	})
-
-	const asymmetricAccessors: Accessors<
-		{ asymmetric: "a" | "b" },
-		typeof Base
-	> = {
 		asymmetric: {
 			get(): "a" {
 				return "a"
@@ -100,8 +94,7 @@ test("type of WithAccessors accessors argument", () => {
 				this.first = value
 			},
 		},
-	}
-	const EnhancedAsymmetric = WithAccessors(Base, asymmetricAccessors)
+	})
 
 	type EnhancedInstance = InstanceType<typeof Enhanced>
 	expectTypeOf<EnhancedInstance>().toEqualTypeOf<{
@@ -110,20 +103,15 @@ test("type of WithAccessors accessors argument", () => {
 		readonly id: 1
 		fullName: `${"a" | "b"}${"c" | "d"}`
 		initials: "a" | "b"
-	}>()
-	expectTypeOf<InstanceType<typeof EnhancedAsymmetric>>().toEqualTypeOf<{
-		first: "a" | "b"
-		last: "c" | "d"
-		readonly id: 1
 		asymmetric: "a" | "b"
 	}>()
 
 	WithAccessors(Base, {
-		// @ts-expect-error setter must accept all values returned by getter.
 		invalid: {
 			get(): "a" | "b" {
 				return "a"
 			},
+			// @ts-expect-error setter must accept all values returned by getter.
 			set(value: "a"): void {
 				void value
 			},
