@@ -29,6 +29,18 @@ type BindSerializerHelper<This, InnerSerializer, AccessorProps> = {
 		: InnerSerializer[Key]
 }
 
+type StrictSerializers<InnerSerializer> = {
+	[K in keyof InnerSerializer]: ValidateSerializer<InnerSerializer[K]>
+}
+
+type ValidateSerializer<S> = [S] extends [
+	UnconstrainedSerializer<infer GetValue, infer SetValue>,
+]
+	? [GetValue] extends [SetValue]
+		? S
+		: never
+	: never
+
 /**
  * Constructor type returned by WithAttributeProps.
  *
@@ -73,7 +85,7 @@ export function WithAttributeProps<
 	// preserved if it was not explicitly defined in Serializer.
 	// Bounding it again allows this to be properly inferred when accessors is
 	// provided inline without needing to explicitly define it.
-	serializers: BindSerializer<Base, InnerSerializer>,
+	serializers: StrictSerializers<BindSerializer<Base, InnerSerializer>>,
 ): WithAttributePropsConstructor<Base, InnerSerializer> {
 	let accessors = createAccessors(serializers)
 	// @ts-expect-error - This is fine, the types are just too complex for TypeScript to understand.
@@ -88,7 +100,8 @@ type AttributeTarget = Pick<
 function createAccessors<
 	InnerSerializers extends Record<
 		string,
-		UnconstrainedSerializer<unknown, unknown>
+		// biome-ignore lint/suspicious/noExplicitAny: value types vary per serializer.
+		UnconstrainedSerializer<any, any>
 	>,
 >(attributeSerializers: InnerSerializers) {
 	let result = {} as Record<string, unknown>
@@ -101,7 +114,8 @@ function createAccessors<
 
 function createAccessor(
 	name: string,
-	serializer: UnconstrainedSerializer<unknown, unknown>,
+	// biome-ignore lint/suspicious/noExplicitAny: value type is opaque at runtime.
+	serializer: UnconstrainedSerializer<any, any>,
 ) {
 	let attributeName = toKebabCase(name)
 	const { parse, serialize } = serializer
@@ -125,11 +139,17 @@ function createAccessor(
 }
 
 type PropsFromSerializer<T> = Simplify<{
-	// biome-ignore lint/suspicious/noExplicitAny: Any serializer is fine.
-	[K in keyof T as T[K] extends AttributeSerializer<any, any, any>
+	[K in keyof T as T[K] extends AttributeSerializer<
+		infer _1,
+		infer _2,
+		infer _3
+	>
 		? K
-		: // biome-ignore lint/suspicious/noExplicitAny: only setValue matters.
-			never]: T[K] extends AttributeSerializer<any, any, infer SetValue>
+		: never]: T[K] extends AttributeSerializer<
+		infer _1,
+		infer _2,
+		infer SetValue
+	>
 		? SetValue
 		: never
 }>
@@ -198,10 +218,10 @@ type AccessorsFromSerializers<D> = {
  */
 export function number(options: {
 	default: number
-}): AttributeSerializer<unknown, number, number>
+}): AttributeSerializer<unknown, number>
 export function number(options?: {
 	default?: null | undefined
-}): AttributeSerializer<unknown, number | null, number | null>
+}): AttributeSerializer<unknown, number | null>
 export function number({
 	default: defaultValue = null,
 }: {
@@ -233,10 +253,10 @@ export function number({
  */
 export function string(options: {
 	default: string
-}): AttributeSerializer<unknown, string, string>
+}): AttributeSerializer<unknown, string>
 export function string(options?: {
 	default?: undefined | null
-}): AttributeSerializer<unknown, string | null, string | null>
+}): AttributeSerializer<unknown, string | null>
 export function string({
 	default: defaultValue = null,
 }: {
@@ -262,7 +282,7 @@ export function string({
  */
 export function boolean(
 	_options: Record<PropertyKey, never> = {},
-): AttributeSerializer<unknown, boolean, boolean> {
+): AttributeSerializer<unknown, boolean> {
 	return {
 		parse(value: string | null) {
 			return value != null
@@ -286,15 +306,15 @@ export function boolean(
 export function pickList<const K extends string>(options: {
 	default?: undefined
 	values: Readonly<Array<K>>
-}): AttributeSerializer<unknown, K | null, K | null>
+}): AttributeSerializer<unknown, K | null>
 export function pickList<const K extends string>(options: {
 	default: NoInfer<K>
 	values: Readonly<Array<K>>
-}): AttributeSerializer<unknown, K, K>
+}): AttributeSerializer<unknown, K>
 export function pickList<const K extends string>(options: {
 	default?: K
 	values: Readonly<Array<K>>
-}): AttributeSerializer<unknown, K | null, K | null> {
+}): AttributeSerializer<unknown, K | null> {
 	let values = new Set(options.values)
 	return {
 		parse(value) {

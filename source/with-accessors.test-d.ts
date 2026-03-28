@@ -68,9 +68,9 @@ test("type of WithAccessors accessors argument", () => {
 				expectTypeOf(this.initials).toEqualTypeOf<"a" | "b">()
 				return `${this.first}${this.last}`
 			},
-			set(_value: string): void {
-				this.first = "a"
-				this.last = "c"
+			set(value: `${"a" | "b"}${"c" | "d"}`): void {
+				this.first = value[0] as "a" | "b"
+				this.last = value[1] as "c" | "d"
 			},
 		},
 		initials: {
@@ -88,13 +88,34 @@ test("type of WithAccessors accessors argument", () => {
 		},
 	})
 
+	const asymmetricAccessors: Accessors<
+		{ asymmetric: "a" | "b" },
+		typeof Base
+	> = {
+		asymmetric: {
+			get(): "a" {
+				return "a"
+			},
+			set(value: "a" | "b"): void {
+				this.first = value
+			},
+		},
+	}
+	const EnhancedAsymmetric = WithAccessors(Base, asymmetricAccessors)
+
 	type EnhancedInstance = InstanceType<typeof Enhanced>
 	expectTypeOf<EnhancedInstance>().toEqualTypeOf<{
 		first: "a" | "b"
 		last: "c" | "d"
 		readonly id: 1
-		fullName: "ac" | "ad" | "bc" | "bd"
+		fullName: `${"a" | "b"}${"c" | "d"}`
 		initials: "a" | "b"
+	}>()
+	expectTypeOf<InstanceType<typeof EnhancedAsymmetric>>().toEqualTypeOf<{
+		first: "a" | "b"
+		last: "c" | "d"
+		readonly id: 1
+		asymmetric: "a" | "b"
 	}>()
 
 	WithAccessors(Base, {

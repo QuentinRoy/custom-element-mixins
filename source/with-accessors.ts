@@ -26,17 +26,18 @@ export type Accessors<
  * Describes a single property accessor.
  *
  * @typeParam This Type of `this` inside the accessor functions.
- * @typeParam Value Type returned by `get` and accepted by `set`.
+ * @typeParam GetValue Type returned by `get`.
+ * @typeParam SetValue Type accepted by `set`.
  */
-export interface Accessor<This, Value> {
+export interface Accessor<This, GetValue, SetValue = GetValue> {
 	/** Reads the computed property value from the instance. */
-	get: (this: This) => Value
+	get: (this: This) => GetValue
 	/**
 	 * Writes a new value to the instance. Omit for readonly accessors.
 	 *
 	 * @param value New value to assign.
 	 */
-	set?: (this: This, value: Value) => void
+	set?: (this: This, value: SetValue) => void
 }
 
 export type BindAccessors<
@@ -50,12 +51,16 @@ export type BindAccessors<
 
 type BindAccessorsHelper<This extends object, InnerAccessors, AccessorProps> = {
 	[Key in keyof InnerAccessors]: InnerAccessors[Key] extends UnboundWritableAccessor<
-		infer Value
+		infer GetValue,
+		infer SetValue
 	>
-		? WritableAccessor<
-				AccessorThis<This, AccessorProps>,
-				Value & (Key extends keyof This ? This[Key] : unknown)
-			>
+		? Key extends keyof This
+			? WritableAccessor<
+					AccessorThis<This, AccessorProps>,
+					GetValue & This[Key],
+					SetValue | This[Key]
+				>
+			: WritableAccessor<AccessorThis<This, AccessorProps>, GetValue, SetValue>
 		: InnerAccessors[Key] extends UnboundReadonlyAccessor<infer GetValue>
 			? Key extends keyof This
 				? Key extends ReadonlyKeysOf<This>
@@ -72,6 +77,7 @@ type UnboundAccessors<M extends object> = Simplify<
 	{
 		-readonly [K in Exclude<keyof M, ConcreteKeysOf<M>>]: Accessor<
 			unknown,
+			M[K],
 			M[K]
 		>
 	} & {
@@ -94,13 +100,17 @@ interface StrictAccessorBase {
 }
 
 type StrictAccessors<InnerAccessors> = {
-	[K in keyof InnerAccessors]: (InnerAccessors[K] extends UnconstrainedAccessor<
-		infer _
-	>
-		? InnerAccessors[K]
-		: never) &
+	[K in keyof InnerAccessors]: ValidateAccessor<InnerAccessors[K]> &
 		StrictAccessorBase
 }
+
+type ValidateAccessor<A> = [A] extends [
+	UnconstrainedAccessor<infer GetValue, infer SetValue>,
+]
+	? [GetValue] extends [SetValue]
+		? A
+		: never
+	: never
 
 /**
  * Constructor type returned by WithAccessors.
@@ -138,7 +148,7 @@ export function WithAccessors<
 	InnerAccessors extends BindAccessors<
 		Base,
 		// biome-ignore lint/suspicious/noExplicitAny: Any accessor is allowed.
-		Record<string, UnconstrainedAccessor<any>>
+		Record<string, UnconstrainedAccessor<any, any>>
 	>,
 >(
 	Base: Base,
@@ -170,11 +180,15 @@ export function WithAccessors<
 
 type PropsFromAccessors<T> = Simplify<
 	{
-		// biome-ignore lint/suspicious/noExplicitAny: any is required here.
-		[K in keyof T as T[K] extends WritableAccessor<any, any>
+		[K in keyof T as T[K] extends WritableAccessor<infer _1, infer _2, infer _3>
 			? K
-			: // biome-ignore lint/suspicious/noExplicitAny: any is required here.
-				never]: T[K] extends WritableAccessor<any, infer Value> ? Value : never
+			: never]: T[K] extends WritableAccessor<
+			infer _1,
+			infer _2,
+			infer SetValue
+		>
+			? SetValue
+			: never
 	} & {
 		// biome-ignore lint/suspicious/noExplicitAny: any is required here.
 		readonly [K in keyof T as T[K] extends ReadonlyAccessor<any, any>
@@ -184,9 +198,9 @@ type PropsFromAccessors<T> = Simplify<
 	}
 >
 
-interface UnconstrainedAccessor<Value> {
-	get: () => Value
-	set?: (value: Value) => void
+interface UnconstrainedAccessor<GetValue, SetValue = GetValue> {
+	get: () => GetValue
+	set?: (value: SetValue) => void
 }
 
 interface UnboundReadonlyAccessor<Value> {
@@ -194,9 +208,9 @@ interface UnboundReadonlyAccessor<Value> {
 	set?: undefined
 }
 
-interface UnboundWritableAccessor<Value> {
-	get: () => Value
-	set: (value: Value) => void
+interface UnboundWritableAccessor<GetValue, SetValue = GetValue> {
+	get: () => GetValue
+	set: (value: SetValue) => void
 }
 
 interface ReadonlyAccessor<This, GetValue> {
@@ -204,9 +218,9 @@ interface ReadonlyAccessor<This, GetValue> {
 	set?: undefined
 }
 
-interface WritableAccessor<This, Value> {
-	get: (this: This) => Value
-	set: (this: This, value: Value) => void
+interface WritableAccessor<This, GetValue, SetValue = GetValue> {
+	get: (this: This) => GetValue
+	set: (this: This, value: SetValue) => void
 }
 
 type AccessorThis<This, AccessorProps> = Simplify<
