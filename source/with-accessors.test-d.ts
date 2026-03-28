@@ -1,6 +1,6 @@
 import { expectTypeOf, test } from "vitest"
 import type { Simplify } from "./utils.ts"
-import type { Accessors } from "./with-accessors.ts"
+import { type Accessors, WithAccessors } from "./with-accessors.ts"
 
 test("type of Accessors", () => {
 	expectTypeOf<Accessors>().toEqualTypeOf<
@@ -50,4 +50,118 @@ test("type of Accessors", () => {
 		c: { get(this: This2): "c"; set(this: This2, value: "c"): void }
 		d: { get(this: This2): "d"; set(this: This2, value: "d"): void }
 	}>()
+})
+
+test("type of WithAccessors accessors argument", () => {
+	class Base {
+		first: "a" | "b" = "a"
+		last: "c" | "d" = "c"
+		readonly id = 1 as const
+	}
+
+	const Enhanced = WithAccessors(Base, {
+		fullName: {
+			get(): `${"a" | "b"}${"c" | "d"}` {
+				expectTypeOf(this.first).toEqualTypeOf<"a" | "b">()
+				expectTypeOf(this.last).toEqualTypeOf<"c" | "d">()
+				expectTypeOf(this.id).toEqualTypeOf<1>()
+				expectTypeOf(this.initials).toEqualTypeOf<"a" | "b">()
+				return `${this.first}${this.last}`
+			},
+			set(_value: string): void {
+				this.first = "a"
+				this.last = "c"
+			},
+		},
+		initials: {
+			get(): "a" | "b" {
+				return this.first
+			},
+			set(value: "a" | "b"): void {
+				this.first = value
+			},
+		},
+		id: {
+			get(): 1 {
+				return 1
+			},
+		},
+	})
+
+	type EnhancedInstance = InstanceType<typeof Enhanced>
+	expectTypeOf<EnhancedInstance>().toEqualTypeOf<{
+		first: "a" | "b"
+		last: "c" | "d"
+		readonly id: 1
+		fullName: "ac" | "ad" | "bc" | "bd"
+		initials: "a" | "b"
+	}>()
+
+	WithAccessors(Base, {
+		// @ts-expect-error setter must accept all values returned by getter.
+		invalid: {
+			get(): "a" | "b" {
+				return "a"
+			},
+			set(value: "a"): void {
+				void value
+			},
+		},
+	})
+})
+
+test("unsupported descriptor properties are forbidden", () => {
+	class Base {
+		a: "a" = "a"
+	}
+
+	WithAccessors(Base, {
+		x: {
+			get(): "a" {
+				return "a"
+			},
+			// @ts-expect-error only enumerable: true is allowed.
+			enumerable: false,
+		},
+	})
+
+	WithAccessors(Base, {
+		x: {
+			get(): "a" {
+				return "a"
+			},
+			// @ts-expect-error configurable can only be false when provided.
+			configurable: true,
+		},
+	})
+
+	WithAccessors(Base, {
+		x: {
+			get(): "a" {
+				return "a"
+			},
+			// @ts-expect-error accessor descriptors cannot define a value.
+			value: "a",
+		},
+	})
+
+	WithAccessors(Base, {
+		x: {
+			get(): "a" {
+				return "a"
+			},
+			// @ts-expect-error accessor descriptors cannot define writable.
+			writable: true,
+		},
+	})
+
+	WithAccessors(Base, {
+		x: {
+			get(): "a" {
+				return "a"
+			},
+			// @ts-expect-error unknown descriptor properties are not allowed.
+			extra: "forbidden",
+		},
+	})
 })

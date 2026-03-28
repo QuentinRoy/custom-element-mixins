@@ -125,17 +125,11 @@ function createAccessor(
 }
 
 type PropsFromSerializer<T> = Simplify<{
-	[K in keyof T as T[K] extends AttributeSerializer<
-		infer _1,
-		infer _2,
-		infer _3
-	>
+	// biome-ignore lint/suspicious/noExplicitAny: Any serializer is fine.
+	[K in keyof T as T[K] extends AttributeSerializer<any, any, any>
 		? K
-		: never]: T[K] extends AttributeSerializer<
-		infer _1,
-		infer _2,
-		infer SetValue
-	>
+		: // biome-ignore lint/suspicious/noExplicitAny: only setValue matters.
+			never]: T[K] extends AttributeSerializer<any, any, infer SetValue>
 		? SetValue
 		: never
 }>

@@ -4,7 +4,7 @@ import { WithAccessors } from "./with-accessors.ts"
 test("WithAccessors", () => {
 	class T {
 		readonly a: "a" | "b"
-		b: "a" | "b" = "a"
+		b: "a" | "b" | "c" = "a"
 		c = "c" as const
 		constructor(a: "a") {
 			this.a = a
@@ -25,10 +25,10 @@ test("WithAccessors", () => {
 	}
 	const U = WithAccessors(T, {
 		a: {
-			get(): "a" {
+			get(): "a" | "b" {
 				return "a"
 			},
-			set(value: "a" | "b"): void {
+			set(value: "a" | "b" | "c"): void {
 				this.b = value
 			},
 		},

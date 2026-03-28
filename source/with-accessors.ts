@@ -29,15 +29,15 @@ export type Accessors<
  * @typeParam GetValue Type returned by `get`.
  * @typeParam SetValue Type accepted by `set`.
  */
-export interface Accessor<This, GetValue, SetValue = GetValue> {
+export interface Accessor<This, Value> {
 	/** Reads the computed property value from the instance. */
-	get: (this: This) => GetValue
+	get: (this: This) => Value
 	/**
 	 * Writes a new value to the instance. Omit for readonly accessors.
 	 *
 	 * @param value New value to assign.
 	 */
-	set?: (this: This, value: SetValue) => void
+	set?: (this: This, value: Value) => void
 }
 
 export type BindAccessors<
@@ -51,16 +51,12 @@ export type BindAccessors<
 
 type BindAccessorsHelper<This extends object, InnerAccessors, AccessorProps> = {
 	[Key in keyof InnerAccessors]: InnerAccessors[Key] extends UnboundWritableAccessor<
-		infer GetValue,
-		infer SetValue
+		infer Value
 	>
-		? Key extends keyof This
-			? WritableAccessor<
-					AccessorThis<This, AccessorProps>,
-					GetValue & This[Key],
-					SetValue | This[Key]
-				>
-			: WritableAccessor<AccessorThis<This, AccessorProps>, GetValue, SetValue>
+		? WritableAccessor<
+				AccessorThis<This, AccessorProps>,
+				Value & (Key extends keyof This ? This[Key] : unknown)
+			>
 		: InnerAccessors[Key] extends UnboundReadonlyAccessor<infer GetValue>
 			? Key extends keyof This
 				? Key extends ReadonlyKeysOf<This>
@@ -77,7 +73,6 @@ type UnboundAccessors<M extends object> = Simplify<
 	{
 		-readonly [K in Exclude<keyof M, ConcreteKeysOf<M>>]: Accessor<
 			unknown,
-			M[K],
 			M[K]
 		>
 	} & {
@@ -87,13 +82,20 @@ type UnboundAccessors<M extends object> = Simplify<
 	}
 >
 
-type ProtectAccessors<InnerAccessors> = {
-	[K in keyof InnerAccessors]: InnerAccessors[K] & {
-		enumerable?: true
-		value?: undefined
-		writable?: undefined
-		configurable?: false
-	}
+interface StrictAccessorBase {
+	enumerable?: true
+	value?: undefined
+	writable?: undefined
+	configurable?: false
+}
+
+type StrictAccessors<InnerAccessors> = {
+	[K in keyof InnerAccessors]: (InnerAccessors[K] extends UnconstrainedAccessor<
+		infer _
+	>
+		? InnerAccessors[K]
+		: never) &
+		StrictAccessorBase
 }
 
 /**
@@ -132,7 +134,7 @@ export function WithAccessors<
 	InnerAccessors extends BindAccessors<
 		Base,
 		// biome-ignore lint/suspicious/noExplicitAny: Any accessor is allowed.
-		Record<string, UnconstrainedAccessor<any, any>>
+		Record<string, UnconstrainedAccessor<any>>
 	>,
 >(
 	Base: Base,
@@ -140,11 +142,11 @@ export function WithAccessors<
 	// preserved if it was not explicitly defined in Accessors.
 	// Bounding it again allows this to be properly inferred when accessors is
 	// provided inline without needing to explicitly define it.
-	accessors: ProtectAccessors<BindAccessors<Base, InnerAccessors>>,
+	accessors: StrictAccessors<BindAccessors<Base, InnerAccessors>>,
 ): WithAccessorsConstructor<Base, InnerAccessors> {
 	let cleanAccessors: Record<
 		PropertyKey,
-		UnconstrainedAccessor<unknown, unknown> & { enumerable: true }
+		UnconstrainedAccessor<unknown> & { enumerable: true }
 	> = {}
 	for (let key in accessors) {
 		let { get, set } = accessors[key]
@@ -164,37 +166,33 @@ export function WithAccessors<
 
 type PropsFromAccessors<T> = Simplify<
 	{
-		[K in keyof T as T[K] extends WritableAccessor<infer _1, infer _2, infer _3>
+		// biome-ignore lint/suspicious/noExplicitAny: any is required here.
+		[K in keyof T as T[K] extends WritableAccessor<any, any>
 			? K
-			: never]: T[K] extends WritableAccessor<
-			infer _1,
-			infer _2,
-			infer SetValue
-		>
-			? SetValue
-			: never
+			: // biome-ignore lint/suspicious/noExplicitAny: any is required here.
+				never]: T[K] extends WritableAccessor<any, infer Value> ? Value : never
 	} & {
-		readonly [K in keyof T as T[K] extends ReadonlyAccessor<infer _1, infer _2>
+		// biome-ignore lint/suspicious/noExplicitAny: any is required here.
+		readonly [K in keyof T as T[K] extends ReadonlyAccessor<any, any>
 			? K
-			: never]: T[K] extends ReadonlyAccessor<infer _, infer GetValue>
-			? GetValue
-			: never
+			: // biome-ignore lint/suspicious/noExplicitAny: any is required here.
+				never]: T[K] extends ReadonlyAccessor<any, infer Value> ? Value : never
 	}
 >
 
-interface UnconstrainedAccessor<GetValue, SetValue = GetValue> {
-	get: () => GetValue
-	set?: (value: SetValue) => void
+interface UnconstrainedAccessor<Value> {
+	get: () => Value
+	set?: (value: Value) => void
 }
 
-interface UnboundReadonlyAccessor<GetValue> {
-	get: () => GetValue
+interface UnboundReadonlyAccessor<Value> {
+	get: () => Value
 	set?: undefined
 }
 
-interface UnboundWritableAccessor<GetValue, SetValue = GetValue> {
-	get: () => GetValue
-	set: (value: SetValue) => void
+interface UnboundWritableAccessor<Value> {
+	get: () => Value
+	set: (value: Value) => void
 }
 
 interface ReadonlyAccessor<This, GetValue> {
@@ -202,9 +200,9 @@ interface ReadonlyAccessor<This, GetValue> {
 	set?: undefined
 }
 
-interface WritableAccessor<This, GetValue, SetValue = GetValue> {
-	get: (this: This) => GetValue
-	set: (this: This, value: SetValue) => void
+interface WritableAccessor<This, Value> {
+	get: (this: This) => Value
+	set: (this: This, value: Value) => void
 }
 
 type AccessorThis<This, AccessorProps> = Simplify<
