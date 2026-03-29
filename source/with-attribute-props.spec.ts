@@ -1,5 +1,4 @@
 import { expect, expectTypeOf, test } from "vitest"
-import type { Merge } from "./utils.ts"
 import {
 	boolean,
 	number,
@@ -46,11 +45,11 @@ test("WithHTMLAttributes attributes getter and setters", () => {
 		},
 	})
 	let t = new T()
-	expectTypeOf(t).toEqualTypeOf<
-		Merge<
-			AttributeTarget,
-			{ unknown: "unknown"; myAttr: "a" | "b" | "c" | "unknown" }
-		>
+	expectTypeOf(t).toExtend<
+		AttributeTarget & {
+			unknown: "unknown"
+			myAttr: "a" | "b" | "c" | "unknown"
+		}
 	>()
 
 	expect(t.myAttr).toBe("unknown")

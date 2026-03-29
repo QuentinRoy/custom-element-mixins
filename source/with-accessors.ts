@@ -3,13 +3,13 @@ import type {
 	BindAccessors,
 	StrictAccessors,
 	UnconstrainedAccessor,
-	WithAccessorsConstructor,
+	WithAccessorsClass,
 } from "./with-accessors.types.ts"
 
 export type {
 	Accessor,
 	Accessors,
-	WithAccessorsConstructor,
+	WithAccessorsClass as WithAccessorsConstructor,
 } from "./with-accessors.types.ts"
 
 /**
@@ -31,7 +31,7 @@ export function WithAccessors<
 	// Bounding it again allows this to be properly inferred when accessors is
 	// provided inline without needing to explicitly define it.
 	accessors: StrictAccessors<BindAccessors<Base, InnerAccessors>>,
-): WithAccessorsConstructor<Base, InnerAccessors> {
+): WithAccessorsClass<Base, InnerAccessors> {
 	let cleanAccessors: Record<
 		PropertyKey,
 		UnconstrainedAccessor<unknown> & { enumerable: true }

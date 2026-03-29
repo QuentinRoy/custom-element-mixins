@@ -1,7 +1,7 @@
 import { expectTypeOf, test } from "vitest"
 import type {
+	Class,
 	ConcreteKeysOf,
-	Constructor,
 	IsEqual,
 	Merge,
 	ReadonlyKeysOf,
@@ -16,7 +16,7 @@ test("type of Simplify", () => {
 })
 
 test("type of Constructor", () => {
-	type C = Constructor<{ x: number }, [string, boolean]>
+	type C = Class<{ x: number }, [string, boolean]>
 	expectTypeOf<ConstructorParameters<C>>().toEqualTypeOf<[string, boolean]>()
 	expectTypeOf<InstanceType<C>>().toEqualTypeOf<{ x: number }>()
 })

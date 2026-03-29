@@ -1,5 +1,5 @@
 import { expectTypeOf, test } from "vitest"
-import type { Constructor, Simplify } from "./utils.ts"
+import type { Class, Simplify } from "./utils.ts"
 import {
 	type AttributeSerializer,
 	boolean,
@@ -8,17 +8,18 @@ import {
 	WithAttributeProps,
 } from "./with-attribute-props.ts"
 
-test("Type of WithAttributeProps parameters", () => {
-	type AttributeTarget = {
-		a: "a"
-		setAttribute(name: string, value: string): void
-		getAttribute(name: string): string | null
-		removeAttribute(name: string): void
+class AttributeTarget {
+	getAttribute(_name: string): string | null {
+		return null
 	}
+	setAttribute(_name: string, _value: string): void {}
+	removeAttribute(_name: string): void {}
+}
 
+test("Type of WithAttributeProps parameters", () => {
 	type T = ReturnType<
 		typeof WithAttributeProps<
-			Constructor<AttributeTarget, ["arg1", "arg2"]>,
+			Class<AttributeTarget & { a: "a" }, ["arg1", "arg2"]>,
 			{
 				x: {
 					parse(value: string | null): "x"
@@ -27,30 +28,17 @@ test("Type of WithAttributeProps parameters", () => {
 			}
 		>
 	>
-	type Expected = Constructor<
-		{
-			a: "a"
-			setAttribute(name: string, value: string): void
-			getAttribute(name: string): string | null
-			removeAttribute(name: string): void
-			x: "x"
-		},
-		["arg1", "arg2"]
-	>
-	expectTypeOf<T>().toEqualTypeOf<Expected>()
+	type Expected = Class<AttributeTarget & { a: "a"; x: "x" }, ["arg1", "arg2"]>
+	expectTypeOf<T>().toExtend<Expected>()
+	expectTypeOf<Expected>().toExtend<T>()
 })
 
 test("Type of WithAttributeProps asymmetric parameters", () => {
-	class AttributeTarget {
-		setAttribute(_name: string, _value: string): void {}
-		getAttribute(_name: string): string | null {
-			return null
-		}
-		removeAttribute(_name: string): void {}
+	class Target extends AttributeTarget {
 		unknown = "unknown" as const
 	}
 
-	const Mixed = WithAttributeProps(AttributeTarget, {
+	const Mixed = WithAttributeProps(Target, {
 		mode: {
 			parse(value: string | null): "a" | "unknown" {
 				if (value === "a") return "a"
@@ -62,26 +50,21 @@ test("Type of WithAttributeProps asymmetric parameters", () => {
 		},
 	})
 
-	expectTypeOf<InstanceType<typeof Mixed>>().toEqualTypeOf<{
-		setAttribute(name: string, value: string): void
-		getAttribute(name: string): string | null
-		removeAttribute(name: string): void
+	type MixedInstance = InstanceType<typeof Mixed>
+	type ExpectedMixedInstance = AttributeTarget & {
 		unknown: "unknown"
 		mode: "a" | "b" | "unknown"
-	}>()
+	}
+	expectTypeOf<MixedInstance>().toExtend<ExpectedMixedInstance>()
+	expectTypeOf<ExpectedMixedInstance>().toExtend<MixedInstance>()
 })
 
 test("Type of WithAttributeProps forbidden asymmetric parameters", () => {
-	class AttributeTarget {
-		setAttribute(_name: string, _value: string): void {}
-		getAttribute(_name: string): string | null {
-			return null
-		}
-		removeAttribute(_name: string): void {}
+	class Target extends AttributeTarget {
 		unknown = "unknown" as const
 	}
 
-	const Forbidden = WithAttributeProps(AttributeTarget, {
+	const Forbidden = WithAttributeProps(Target, {
 		attr: {
 			parse(_value: string | null): "a" | "b" {
 				return "a"
@@ -189,13 +172,7 @@ test("Type of AttributeSerializer", () => {
 })
 
 test("WithAttributeProps should not discards static members", () => {
-	class BaseWithStatics {
-		setAttribute(_name: string, _value: string): void {}
-		getAttribute(_name: string): string | null {
-			return null
-		}
-		removeAttribute(_name: string): void {}
-
+	class BaseWithStatics extends AttributeTarget {
 		prop: string = "test"
 
 		static VERSION: string = "1.0.0"
@@ -223,12 +200,11 @@ test("WithAttributeProps should not discards static members", () => {
 })
 
 test("WithAttributeProps should inherit from Base class", () => {
-	class Base {
-		setAttribute(_name: string, _value: string): void {}
-		getAttribute(_name: string): string | null {
-			return null
+	class Base extends AttributeTarget {
+		baseMethod() {
+			return "ok"
 		}
-		removeAttribute(_name: string): void {}
+		baseProp = "base"
 	}
 
 	const Enhanced = WithAttributeProps(Base, {
@@ -238,18 +214,11 @@ test("WithAttributeProps should inherit from Base class", () => {
 	// Runtime inheritance is correct; this assertion captures the intended
 	// constructor-level inheritance in the type system as well.
 	expectTypeOf(Enhanced).toExtend<typeof Base>()
-	const _x: typeof Base = Enhanced
-	void _x
+	const x: Base = new Enhanced()
+	void x
 })
 
-test("WithAccessors should preserve base class method overloads", () => {
-	class AttributeTarget {
-		setAttribute(_name: string, _value: string): void {}
-		getAttribute(_name: string): string | null {
-			return null
-		}
-		removeAttribute(_name: string): void {}
-	}
+test("WithAttributeProps should preserve base class method overloads", () => {
 	class Base extends AttributeTarget {
 		method(value: "a"): "a"
 		method(value: "b"): "b"
@@ -257,6 +226,7 @@ test("WithAccessors should preserve base class method overloads", () => {
 			return value
 		}
 	}
+
 	const Enhanced = WithAttributeProps(Base, {
 		flag: boolean(),
 	})

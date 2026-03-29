@@ -9,13 +9,29 @@ export type Simplify<T> = {
 } & {}
 
 /**
- * Generic constructor type.
+ * Generic Class type.
  *
  * @typeParam T The instance type produced by the constructor.
  * @typeParam Arguments The constructor parameter tuple.
  */
-export interface Constructor<T, Arguments extends unknown[] = []> {
+export interface Class<T, Arguments extends unknown[] = []> {
 	new (...args: Arguments): T
+	prototype: Pick<T, keyof T>
+}
+
+/**
+ * Preserves the static side of a class while replacing the instance type
+ * produced by `new`.
+ *
+ * @typeParam Base Base class whose statics should be preserved.
+ * @typeParam Instance Instance type produced by the resulting class.
+ */
+export type ConstructorWithStatics<Base extends Class<object>, Instance> = Omit<
+	Base,
+	"prototype"
+> & {
+	new (...args: ConstructorParameters<Base>): Instance
+	prototype: Pick<Instance, keyof Instance>
 }
 
 /**
@@ -91,4 +107,4 @@ export function toKebabCase(str: string): string {
 export class Empty {}
 
 // biome-ignore lint/suspicious/noExplicitAny: Any constructor is allowed.
-export interface AnyConstructor extends Constructor<object, any[]> {}
+export interface AnyConstructor extends Class<object, any[]> {}

@@ -1,4 +1,4 @@
-import type { Constructor, Simplify } from "./utils.ts"
+import type { Class, ConstructorWithStatics, Simplify } from "./utils.ts"
 
 /**
  * Describes how a property is read from and written to an attribute.
@@ -39,10 +39,7 @@ export type AttributeTarget = Pick<
 	"getAttribute" | "setAttribute" | "removeAttribute"
 >
 
-export type BindSerializers<
-	Base extends Constructor<object>,
-	InnerSerializers,
-> = {
+export type BindSerializers<Base extends Class<object>, InnerSerializers> = {
 	[Key in keyof InnerSerializers]: BindSerializerValue<
 		InstanceType<Base>,
 		SerializerProperties<InnerSerializers>,
@@ -56,27 +53,21 @@ export type StrictSerializers<InnerSerializers> = {
 }
 
 /**
- * Constructor type returned by WithAttributeProps.
+ * Class type returned by WithAttributeProps.
  *
  * Instances preserve the base instance shape and add property types inferred
  * from the provided attribute serializers.
  *
- * @typeParam Base Base constructor being extended.
+ * @typeParam Base Base class being extended.
  * @typeParam InnerSerializer Serializer map used to derive added properties.
  */
-export interface WithAttributePropsConstructor<
-	Base extends Constructor<object>,
+export type WithAttributePropsClass<
+	Base extends Class<object>,
 	InnerSerializer,
-> {
-	/**
-	 * Creates an instance with typed property-to-attribute mappings.
-	 *
-	 * @param args Arguments forwarded to the base constructor.
-	 */
-	new (
-		...args: ConstructorParameters<Base>
-	): Simplify<InstanceType<Base> & SerializerProperties<InnerSerializer>>
-}
+> = ConstructorWithStatics<
+	Base,
+	InstanceType<Base> & SerializerProperties<InnerSerializer>
+>
 
 export type AccessorsFromSerializers<D> = {
 	[K in keyof D]: D[K] extends UnconstrainedSerializer<

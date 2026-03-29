@@ -1,4 +1,4 @@
-import { type Constructor, toKebabCase } from "./utils.ts"
+import { type Class, toKebabCase } from "./utils.ts"
 import { WithAccessors } from "./with-accessors.ts"
 import type {
 	AccessorsFromSerializers,
@@ -7,21 +7,21 @@ import type {
 	BindSerializers,
 	StrictSerializers,
 	UnconstrainedSerializer,
-	WithAttributePropsConstructor,
+	WithAttributePropsClass,
 } from "./with-attribute-props.types.ts"
 
 export type {
 	AttributeSerializer,
-	WithAttributePropsConstructor,
+	WithAttributePropsClass as WithAttributePropsConstructor,
 } from "./with-attribute-props.types.ts"
 
 type PreparedSerializers<
-	Base extends Constructor<object>,
+	Base extends Class<object>,
 	InnerSerializers,
 > = StrictSerializers<BindSerializers<Base, InnerSerializers>>
 
 type AttributePropAccessors<
-	Base extends Constructor<object>,
+	Base extends Class<object>,
 	InnerSerializers,
 > = AccessorsFromSerializers<PreparedSerializers<Base, InnerSerializers>>
 
@@ -37,7 +37,7 @@ type AttributePropAccessors<
  */
 export function WithAttributeProps<
 	// biome-ignore lint/suspicious/noExplicitAny: Any constructor is allowed.
-	Base extends Constructor<AttributeTarget, any[]>,
+	Base extends Class<AttributeTarget, any[]>,
 	// biome-ignore lint/suspicious/noExplicitAny: Any serializer is allowed.
 	InnerSerializer extends Record<string, UnconstrainedSerializer<any, any>>,
 >(
@@ -47,10 +47,10 @@ export function WithAttributeProps<
 	// Bounding it again allows this to be properly inferred when accessors is
 	// provided inline without needing to explicitly define it.
 	serializers: PreparedSerializers<Base, InnerSerializer>,
-): WithAttributePropsConstructor<Base, InnerSerializer> {
+): WithAttributePropsClass<Base, InnerSerializer> {
 	let accessors: AttributePropAccessors<Base, InnerSerializer> =
 		createAccessors(serializers)
-	return WithAccessors(Base, accessors) as WithAttributePropsConstructor<
+	return WithAccessors(Base, accessors) as WithAttributePropsClass<
 		Base,
 		InnerSerializer
 	>

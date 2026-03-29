@@ -1,7 +1,8 @@
 import type {
 	AnyConstructor,
+	Class,
 	ConcreteKeysOf,
-	Constructor,
+	ConstructorWithStatics,
 	Merge,
 	ReadonlyKeysOf,
 	Simplify,
@@ -147,22 +148,16 @@ type ValidateAccessor<A> = A extends {
  * @typeParam Base Base constructor being extended.
  * @typeParam InnerAccessors Accessor map used to derive added properties.
  */
-export interface WithAccessorsConstructor<
-	Base extends Constructor<object>,
+export type WithAccessorsClass<
+	Base extends Class<object>,
 	InnerAccessors,
-> {
-	/**
-	 * Creates an instance that combines base members with accessor-backed props.
-	 *
-	 * @param args Arguments forwarded to the base constructor.
-	 */
-	new (
-		...args: ConstructorParameters<Base>
-	): Merge<
+> = ConstructorWithStatics<
+	Base,
+	Merge<
 		InstanceType<Base>,
 		AccessorProperties<BindAccessors<Base, InnerAccessors>>
 	>
-}
+>
 
 interface InputReadonlyAccessor<Value> {
 	get: () => Value
