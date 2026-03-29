@@ -67,6 +67,8 @@ test("WithHTMLAttributes attributes getter and setters", () => {
 	t.myAttr = "unknown"
 	expect(t.getAttribute("my-attr")).toBe("a")
 	expect(t.myAttr).toBe("a")
+
+	expect(t).toBeInstanceOf(A)
 })
 
 test("number() without default", () => {

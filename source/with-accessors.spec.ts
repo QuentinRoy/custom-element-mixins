@@ -56,4 +56,6 @@ test("WithAccessors", () => {
 	expect(u.b).toBe("b")
 	// a getter always returns "a"
 	expect(u.a).toBe("a")
+
+	expect(u).toBeInstanceOf(T)
 })
