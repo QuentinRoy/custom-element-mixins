@@ -187,3 +187,82 @@ test("Type of AttributeSerializer", () => {
 		serialize(value: "a" | "b" | null): string | null
 	}>()
 })
+
+test("WithAttributeProps should not discards static members", () => {
+	class BaseWithStatics {
+		setAttribute(_name: string, _value: string): void {}
+		getAttribute(_name: string): string | null {
+			return null
+		}
+		removeAttribute(_name: string): void {}
+
+		prop: string = "test"
+
+		static VERSION: string = "1.0.0"
+		static create(): BaseWithStatics {
+			return new BaseWithStatics()
+		}
+	}
+
+	const Enhanced = WithAttributeProps(BaseWithStatics, {
+		attr: {
+			parse(value: string | null): string {
+				return value ?? ""
+			},
+			serialize(value: string): string | null {
+				return value
+			},
+		},
+	})
+
+	// Instance type works correctly
+	type EnhancedInstance = InstanceType<typeof Enhanced>
+	expectTypeOf<EnhancedInstance>().toHaveProperty("prop")
+	expectTypeOf<EnhancedInstance>().toHaveProperty("attr")
+	expectTypeOf(Enhanced).toHaveProperty("VERSION")
+})
+
+test("WithAttributeProps should inherit from Base class", () => {
+	class Base {
+		setAttribute(_name: string, _value: string): void {}
+		getAttribute(_name: string): string | null {
+			return null
+		}
+		removeAttribute(_name: string): void {}
+	}
+
+	const Enhanced = WithAttributeProps(Base, {
+		value: string(),
+	})
+
+	// Runtime inheritance is correct; this assertion captures the intended
+	// constructor-level inheritance in the type system as well.
+	expectTypeOf(Enhanced).toExtend<typeof Base>()
+	const _x: typeof Base = Enhanced
+	void _x
+})
+
+test("WithAccessors should preserve base class method overloads", () => {
+	class AttributeTarget {
+		setAttribute(_name: string, _value: string): void {}
+		getAttribute(_name: string): string | null {
+			return null
+		}
+		removeAttribute(_name: string): void {}
+	}
+	class Base extends AttributeTarget {
+		method(value: "a"): "a"
+		method(value: "b"): "b"
+		method(value: string): string {
+			return value
+		}
+	}
+	const Enhanced = WithAttributeProps(Base, {
+		flag: boolean(),
+	})
+
+	// Overloads from Base should remain visible on the resulting instance type.
+	const instance = new Enhanced()
+	expectTypeOf(instance.method("a")).toEqualTypeOf<"a">()
+	expectTypeOf(instance.method("b")).toEqualTypeOf<"b">()
+})

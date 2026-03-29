@@ -57,6 +57,7 @@ test("type of WithAccessors accessors argument", () => {
 		first: "a" | "b" = "a"
 		last: "c" | "d" = "c"
 		readonly id = 1 as const
+		method(): void {}
 	}
 
 	const Enhanced = WithAccessors(Base, {
@@ -104,6 +105,7 @@ test("type of WithAccessors accessors argument", () => {
 		fullName: `${"a" | "b"}${"c" | "d"}`
 		initials: "a" | "b"
 		asymmetric: "a" | "b"
+		method(): void
 	}>()
 
 	WithAccessors(Base, {
@@ -173,4 +175,81 @@ test("unsupported descriptor properties are forbidden", () => {
 			extra: "forbidden",
 		},
 	})
+})
+
+test("WithAccessors should not discards static members", () => {
+	class BaseWithStatics {
+		value: "instance" = "instance"
+
+		static staticCount: number = 0
+		static create(): BaseWithStatics {
+			return new BaseWithStatics()
+		}
+
+		getValue(): string {
+			return this.value
+		}
+	}
+
+	const Enhanced = WithAccessors(BaseWithStatics, {
+		accessorProp: {
+			get(): string {
+				return "accessor"
+			},
+		},
+	})
+
+	// Instance type works correctly
+	type EnhancedInstance = InstanceType<typeof Enhanced>
+	expectTypeOf<EnhancedInstance>().toHaveProperty("value")
+	expectTypeOf<EnhancedInstance>().toHaveProperty("accessorProp")
+	expectTypeOf<EnhancedInstance>().toHaveProperty("getValue")
+	expectTypeOf(Enhanced).toHaveProperty("staticCount")
+})
+
+test("WithAccessors should inherit from Base class", () => {
+	class Base {
+		baseMethod(): "ok" {
+			return "ok"
+		}
+
+		static baseStatic = 1
+	}
+
+	const Enhanced = WithAccessors(Base, {
+		enhancedProp: {
+			get(): "enhanced" {
+				return "enhanced"
+			},
+		},
+	})
+
+	// Runtime inheritance is correct; this assertion captures the intended
+	// constructor-level inheritance in the type system as well.
+	expectTypeOf(Enhanced).toExtend<typeof Base>()
+	const _x: typeof Base = Enhanced
+	void _x
+})
+
+test("WithAccessors should preserve base class method overloads", () => {
+	class Base {
+		method(value: "a"): "a"
+		method(value: "b"): "b"
+		method(value: "a" | "b"): "a" | "b" {
+			return value
+		}
+	}
+
+	const Enhanced = WithAccessors(Base, {
+		flag: {
+			get(): true {
+				return true
+			},
+		},
+	})
+
+	// Overloads from Base should remain visible on the resulting instance type.
+	const instance = new Enhanced()
+	expectTypeOf(instance.method("a")).toEqualTypeOf<"a">()
+	expectTypeOf(instance.method("b")).toEqualTypeOf<"b">()
 })
