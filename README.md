@@ -10,7 +10,7 @@ Tiny TypeScript-first mixins for building classes (especially custom elements) w
 
 ## Install
 
-This package is intended to be published on JSR.
+This package is published on [JSR](https://jsr.io/@quentinroy/custom-element-mixins).
 
 ```bash
 # pnpm
