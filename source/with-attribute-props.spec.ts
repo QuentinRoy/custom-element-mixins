@@ -45,12 +45,7 @@ test("WithHTMLAttributes attributes getter and setters", () => {
 		},
 	})
 	let t = new T()
-	expectTypeOf(t).toExtend<
-		AttributeTarget & {
-			unknown: "unknown"
-			myAttr: "a" | "b" | "c" | "unknown"
-		}
-	>()
+	expectTypeOf(t).toEqualTypeOf<A & { myAttr: "a" | "b" | "c" | "unknown" }>()
 
 	expect(t.myAttr).toBe("unknown")
 	expect(t.getAttribute("my-attr")).toBe(null)
