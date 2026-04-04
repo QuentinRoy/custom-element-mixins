@@ -1,7 +1,10 @@
-name: Test and Publish
+name: CI
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
 
@@ -15,11 +18,14 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Run tests
-        run: deno task test
+      - name: Install Playwright Chromium
+        run: deno run -A npm:playwright install --with-deps --only-shell chromium
+      - name: Run browser tests
+        run: deno task test:browser
 
   publish:
     needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
