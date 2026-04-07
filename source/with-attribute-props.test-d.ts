@@ -2,9 +2,6 @@ import { expectTypeOf, test } from "vitest"
 import type { Class, Simplify } from "./utils.ts"
 import {
 	type AttributeSerializer,
-	boolean,
-	number,
-	string,
 	WithAttributeProps,
 } from "./with-attribute-props.ts"
 
@@ -14,6 +11,15 @@ class AttributeTarget {
 	}
 	setAttribute(_name: string, _value: string): void {}
 	removeAttribute(_name: string): void {}
+}
+
+const mockSerializer: AttributeSerializer<unknown, unknown> = {
+	parse(value: string | null) {
+		return value
+	},
+	serialize(value: unknown) {
+		return String(value)
+	},
 }
 
 test("Type of WithAttributeProps parameters", () => {
@@ -76,41 +82,6 @@ test("Type of WithAttributeProps forbidden asymmetric parameters", () => {
 		},
 	})
 	void Forbidden
-})
-
-test("Type of number()", () => {
-	let n1 = number()
-	expectTypeOf(n1).toEqualTypeOf<{
-		parse(a: string | null): number | null
-		serialize(v: number | null): string | null
-	}>
-
-	let n2 = number({ default: 0 })
-	expectTypeOf(n2).toEqualTypeOf<{
-		parse(a: string | null): number
-		serialize(v: number): string | null
-	}>
-})
-
-test("Type of string()", () => {
-	let s2 = string()
-	expectTypeOf<Simplify<typeof s2>>().toEqualTypeOf<{
-		parse: (a: string | null) => string | null
-		serialize: (value: string | null) => string | null
-	}>()
-	let s1 = string({ default: "hello" })
-	expectTypeOf<Simplify<typeof s1>>().toEqualTypeOf<{
-		parse(a: string | null): string
-		serialize(v: string): string | null
-	}>()
-})
-
-test("Type of boolean()", () => {
-	let b = boolean()
-	expectTypeOf<Simplify<typeof b>>().toEqualTypeOf<{
-		parse(a: string | null): boolean
-		serialize(v: boolean): string | null
-	}>()
 })
 
 test("Type of AttributeSerializer", () => {
@@ -208,7 +179,7 @@ test("WithAttributeProps should inherit from Base class", () => {
 	}
 
 	const Enhanced = WithAttributeProps(Base, {
-		value: string(),
+		value: mockSerializer,
 	})
 
 	// Runtime inheritance is correct; this assertion captures the intended
@@ -228,7 +199,7 @@ test("WithAttributeProps should preserve base class method overloads", () => {
 	}
 
 	const Enhanced = WithAttributeProps(Base, {
-		flag: boolean(),
+		value: mockSerializer,
 	})
 
 	// Overloads from Base should remain visible on the resulting instance type.

@@ -1,3 +1,4 @@
+export { boolean, number, pickList, string } from "./attribute-serializers.ts"
 export {
 	type Accessor,
 	type Accessors,
@@ -6,10 +7,6 @@ export {
 } from "./with-accessors.ts"
 export {
 	type AttributeSerializer,
-	boolean,
-	number,
-	pickList,
-	string,
 	WithAttributeProps,
 	type WithAttributePropsConstructor,
 } from "./with-attribute-props.ts"

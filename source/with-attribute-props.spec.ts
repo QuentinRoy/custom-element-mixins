@@ -1,16 +1,20 @@
 import { expect, expectTypeOf, test } from "vitest"
-import {
-	boolean,
-	number,
-	pickList,
-	string,
-	WithAttributeProps,
-} from "./with-attribute-props.ts"
+import { WithAttributeProps } from "./with-attribute-props.ts"
+
+const browserTest = test.skipIf(
+	typeof window === "undefined" || typeof customElements === "undefined",
+)
+
+function defineElement(tagName: string, ctor: CustomElementConstructor) {
+	if (!customElements.get(tagName)) {
+		customElements.define(tagName, ctor)
+	}
+}
 
 class AttributeTarget {
 	#map = new Map<string, string>()
 	getAttribute(name: string): string | null {
-		return this.#map.get(name) ?? null
+		return this.#map.has(name) ? String(this.#map.get(name)) : null
 	}
 	setAttribute(name: string, value: string): void {
 		this.#map.set(name, value)
@@ -66,63 +70,39 @@ test("WithHTMLAttributes attributes getter and setters", () => {
 	expect(t).toBeInstanceOf(A)
 })
 
-test("number() without default", () => {
-	let n = number()
-	expect(n.parse(null)).toBe(null)
-	expect(n.serialize(null)).toBe(null)
-	expect(n.parse("123")).toBe(123)
-	expect(n.serialize(123)).toBe("123")
-	expect(n.parse("not a number")).toBe(null)
-})
+const isoDate = {
+	parse(value: string | null): Date | null {
+		if (value == null) return null
+		const date = new Date(value)
+		return Number.isNaN(date.valueOf()) ? null : date
+	},
+	serialize(value: Date | null): string | null {
+		return value == null ? null : value.toISOString()
+	},
+}
 
-test("number() with default", () => {
-	let n = number({ default: 3 })
-	expect(n.parse(null)).toBe(3)
-	expect(n.parse("123")).toBe(123)
-	expect(n.serialize(123)).toBe("123")
-	expect(n.parse("not a number")).toBe(3)
-})
+browserTest(
+	"WithAttributeProps syncs props and kebab-case HTMLElement attributes",
+	() => {
+		const Mixed = WithAttributeProps(HTMLElement, {
+			publishedAt: isoDate,
+		})
 
-test("string() without default", () => {
-	let s = string()
-	expect(s.parse(null)).toBe(null)
-	expect(s.parse("hello")).toBe("hello")
-	expect(s.serialize("hello")).toBe("hello")
-	expect(s.serialize(null)).toBe(null)
-})
+		defineElement("x-attrs-a", Mixed)
+		const el = document.createElement("x-attrs-a") as InstanceType<typeof Mixed>
 
-test("string() with default", () => {
-	let s = string({ default: "fallback" })
-	expect(s.parse(null)).toBe("fallback")
-	expect(s.parse("hello")).toBe("hello")
-	expect(s.serialize("hello")).toBe("hello")
-})
+		expect(el.publishedAt).toBe(null)
+		expect(el.getAttribute("published-at")).toBe(null)
 
-test("boolean()", () => {
-	let b = boolean()
-	expect(b.parse(null)).toBe(false)
-	expect(b.parse("")).toBe(true)
-	expect(b.parse("present")).toBe(true)
-	expect(b.serialize(true)).toBe("")
-	expect(b.serialize(false)).toBe(null)
-})
+		const date = new Date("2026-01-02T03:04:05.000Z")
+		el.publishedAt = date
+		expect(el.getAttribute("published-at")).toBe("2026-01-02T03:04:05.000Z")
+		expect(el.publishedAt?.toISOString()).toBe("2026-01-02T03:04:05.000Z")
 
-test("pickList() without default", () => {
-	let p = pickList({ values: ["primary", "secondary"] as const })
-	expect(p.parse(null)).toBe(null)
-	expect(p.parse("primary")).toBe("primary")
-	expect(p.parse("unknown")).toBe(null)
-	expect(p.serialize("secondary")).toBe("secondary")
-	expect(p.serialize(null)).toBe(null)
-})
+		el.setAttribute("published-at", "invalid")
+		expect(el.publishedAt).toBe(null)
 
-test("pickList() with default", () => {
-	let p = pickList({
-		values: ["primary", "secondary"] as const,
-		default: "primary",
-	})
-	expect(p.parse(null)).toBe("primary")
-	expect(p.parse("secondary")).toBe("secondary")
-	expect(p.parse("unknown")).toBe("primary")
-	expect(p.serialize("secondary")).toBe("secondary")
-})
+		el.publishedAt = null
+		expect(el.getAttribute("published-at")).toBe(null)
+	},
+)
