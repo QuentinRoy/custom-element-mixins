@@ -23,12 +23,14 @@ export function number({
 } = {}) {
 	return {
 		parse(value: string | null) {
-			if (value == null) return defaultValue
+			if (value == null) {
+				return defaultValue
+			}
 			let parsed = Number(value)
 			if (Number.isNaN(parsed)) {
-				value = null
+				return defaultValue
 			}
-			return value == null ? defaultValue : Number(value)
+			return parsed
 		},
 		serialize(value: number | null) {
 			return value == null ? null : String(value)
