@@ -1,6 +1,6 @@
 {
 	"name": "@quentinroy/custom-element-mixins",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"license": "MIT",
 	"exports": "./source/index.ts",
 	"publish": {
