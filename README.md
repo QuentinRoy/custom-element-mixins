@@ -1,6 +1,67 @@
 # custom-element-mixins
 
-Tiny TypeScript-first mixins for building classes (especially custom elements) with strong typing and no runtime dependencies.
+TypeScript-first mixins for custom elements with strong typing and a very small JavaScript size (in kB).
+
+Most of the complexity of this library lives in TypeScript types, not in runtime code.
+
+## Why This Library
+
+- Strong typing for hard-to-type patterns: accessors, attribute-backed props, and serializer-driven value transformations.
+- Tiny JS size (kB): the emitted JavaScript is intentionally very small and dependency-free.
+- Better DX for custom elements: you get typed properties from attributes.
+
+## Flagship Example: `HTMLBookCardElement`
+
+This is the main use case this library is built for: define typed attribute-backed props on a custom element, with properties and HTML attributes always in sync.
+
+```ts
+import { WithAttributeProps, number, string, boolean, pickList } from "jsr:@quentinroy/custom-element-mixins";
+
+class HTMLBookCardElement extends WithAttributeProps(HTMLElement, {
+  page: number({ default: 1 }),
+  bookTitle: string(),
+  open: boolean(),
+  variant: pickList({ values: ["primary", "secondary"], default: "primary" }),
+}) {
+  static get observedAttributes() {
+    return ["page", "book-title", "open", "variant"];
+  }
+
+  connectedCallback() {
+    this.#render();
+  }
+
+  attributeChangedCallback() {
+    this.#render();
+  }
+
+  #render() {
+    this.textContent = `${this.bookTitle} (page ${this.page}) - ${this.variant}`;
+  }
+}
+
+const el = new HTMLBookCardElement();
+
+// Prop -> attribute
+el.page = 3;
+el.bookTitle = "Dune";
+el.open = true;
+el.variant = "secondary";
+// el.getAttribute("page") === "3"
+// el.getAttribute("book-title") === "Dune"
+// el.hasAttribute("open") === true
+// el.getAttribute("variant") === "secondary"
+
+// Attribute -> prop
+el.setAttribute("page", "12");
+el.setAttribute("book-title", "Foundation");
+el.removeAttribute("open");
+el.setAttribute("variant", "primary");
+// el.page === 12
+// el.bookTitle === "Foundation"
+// el.open === false
+// el.variant === "primary"
+```
 
 ## Features
 
@@ -122,10 +183,21 @@ const WithProps = WithAttributeProps(HTMLElement, {
 });
 
 const el = new WithProps();
-el.page = 3;          // sets attribute page="3"
-el.open = true;       // sets attribute open=""
-el.bookTitle = null;  // removes attribute book-title
-el.variant = "secondary";
+el.page = 3; // prop -> attribute: page="3"
+el.setAttribute("page", "7"); // attribute -> prop
+// el.page === 7
+
+el.open = true; // prop -> attribute: open=""
+el.removeAttribute("open"); // attribute -> prop
+// el.open === false
+
+el.bookTitle = "Dune"; // prop -> attribute: book-title="Dune"
+el.setAttribute("book-title", "Foundation"); // attribute -> prop
+// el.bookTitle === "Foundation"
+
+el.variant = "secondary"; // prop -> attribute: variant="secondary"
+el.setAttribute("variant", "primary"); // attribute -> prop
+// el.variant === "primary"
 ```
 
 You can also use the higher-order class directly in `extends`:
@@ -157,11 +229,24 @@ class HTMLBookCardElement extends WithAttributeProps(HTMLElement, {
 }
 
 const el = new HTMLBookCardElement();
-el.page = 3;
-el.open = true;
-el.bookTitle = null;
-el.variant = "secondary";
+el.page = 3; // prop -> attribute
+el.setAttribute("page", "12"); // attribute -> prop
+// el.page === 12
+
+el.open = true; // prop -> attribute
+el.removeAttribute("open"); // attribute -> prop
+// el.open === false
+
+el.bookTitle = "Dune"; // prop -> attribute
+el.setAttribute("book-title", "Foundation"); // attribute -> prop
+// el.bookTitle === "Foundation"
+
+el.variant = "secondary"; // prop -> attribute
+el.setAttribute("variant", "primary"); // attribute -> prop
+// el.variant === "primary"
 ```
+
+This is the same pattern showcased in the flagship `HTMLBookCardElement` example above.
 
 You can also provide custom serializers:
 
