@@ -1,11 +1,18 @@
 # @quentinroy/custom-element-mixins
 
-## Unreleased
+## 1.0.0
 
-### Major Changes
+### Major changes
 
-- Use `undefined` for missing attribute values throughout the serializer API. Custom serializers now receive `string | undefined` and return `string | undefined` when serializing; returning `undefined` removes the attribute. `WithAttributeProps` converts the DOM's missing-attribute `null` to `undefined`.
-- Allow defaults of any type in `number`, `string`, and `pickList`. Omitted defaults now return `undefined`; explicit defaults, including `null`, are preserved. Defaults outside the serializer's normal value type remove the attribute when assigned.
+- Pass `undefined` to a serializer's `parse` function when an attribute is missing. Custom serializers must accept `string | undefined` instead of `string | null`. `WithAttributeProps` converts the DOM's `null` to `undefined` before parsing.
+- Use `undefined` instead of `null` as the return value from `serialize` to remove an attribute. Custom serializers must return `string | undefined`.
+- Return `undefined` instead of `null` from `number`, `string`, and `pickList` when parsing falls back to an omitted or explicitly `undefined` default. Set `{ default: null }` to keep the `null` fallback.
+
+### Minor changes
+
+- Allow defaults of any type in `number`, `string`, and `pickList`, and include the default's type in the property type. Explicit defaults are returned unchanged. Assigning a default outside the serializer's normal value type removes the attribute; defaults of the normal type serialize as usual.
+- Add `rejectEmpty` to `number()` to treat empty and whitespace-only strings as invalid and return the fallback. The option defaults to `false`.
+- Add `finite` to `number()` to reject non-finite results, including numeric overflow, and return the fallback. The option defaults to `false`. When enabled, a non-finite numeric default throws a `RangeError` when the serializer is created.
 
 ## 0.2.0
 
