@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
+      - name: Install Deno prerequisites
+        run: apt-get update && apt-get install -y --no-install-recommends unzip
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
