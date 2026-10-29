@@ -1,33 +1,49 @@
 import type { AttributeSerializer } from "./with-attribute-props.ts"
 
+interface NumberOptions {
+	default?: number | null | undefined
+	rejectEmpty?: boolean
+	finite?: boolean
+}
+
 /**
  * Creates an attribute serializer for numeric props.
  *
- * `parse` converts the attribute string to a number.
+ * `parse` converts the attribute string using `Number()`.
  * When the attribute is missing, or is not a valid number, it returns the
  * provided default or `null`.
  *
  * @param options Configuration for the serializer.
  * @param options.default Value returned when the attribute is missing or invalid.
+ * @param options.rejectEmpty Treat empty and whitespace-only strings as invalid. Defaults to false.
+ * @param options.finite Reject non-finite numbers. Defaults to false.
+ * @throws {RangeError} If `finite` is true and the provided default is non-finite.
  */
-export function number(options: {
-	default: number
-}): AttributeSerializer<unknown, number>
-export function number(options?: {
-	default?: null | undefined
-}): AttributeSerializer<unknown, number | null>
+export function number(
+	options: NumberOptions & {
+		default: number
+	},
+): AttributeSerializer<unknown, number>
+export function number(
+	options?: NumberOptions & {
+		default?: null | undefined
+	},
+): AttributeSerializer<unknown, number | null>
 export function number({
 	default: defaultValue = null,
-}: {
-	default?: number | null | undefined
-} = {}) {
+	rejectEmpty = false,
+	finite = false,
+}: NumberOptions = {}) {
+	if (finite && defaultValue != null && !Number.isFinite(defaultValue)) {
+		throw new RangeError("The default must be finite when finite is enabled.")
+	}
 	return {
 		parse(value: string | null) {
-			if (value == null) {
+			if (value == null || (rejectEmpty && value.trim() === "")) {
 				return defaultValue
 			}
 			let parsed = Number(value)
-			if (Number.isNaN(parsed)) {
+			if (Number.isNaN(parsed) || (finite && !Number.isFinite(parsed))) {
 				return defaultValue
 			}
 			return parsed

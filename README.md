@@ -271,6 +271,28 @@ const WithCustom = WithAttributeProps(HTMLElement, {
 - `number({ default: n })` -> prop type: `number`
 - If attribute value is missing or invalid, parse returns the default when provided, otherwise `null`.
 
+Parsing uses JavaScript's `Number()` conversion. By default, empty and whitespace-only strings become `0`, and `"Infinity"` and `"-Infinity"` are accepted. `NaN` and malformed numeric text use the fallback.
+
+Use `rejectEmpty` and `finite` to restrict accepted input:
+
+```ts
+const rate = number({ default: 60, rejectEmpty: true, finite: true });
+
+rate.parse("");         // 60
+rate.parse("   ");      // 60
+rate.parse("Infinity"); // 60
+rate.parse("1e999");    // 60 (overflow)
+rate.parse("0");        // 0
+rate.parse(" 24 ");     // 24
+```
+
+- `rejectEmpty`: empty and whitespace-only strings use the fallback.
+- `finite`: non-finite results, including overflow, use the fallback. A non-finite numeric `default` throws a `RangeError` when the serializer is created.
+
+Both options default to `false` and work independently. Without a numeric default, rejected input returns `null`. Nonempty input still follows `Number()`, including hexadecimal and scientific notation.
+
+These options affect parsing. Serialization still converts numbers to strings: with the options above, assigning `el.rate = Infinity` stores `rate="Infinity"`, and reading `el.rate` returns `60`.
+
 ## `string(options?)`
 
 - `string()` -> prop type: `string | null`
