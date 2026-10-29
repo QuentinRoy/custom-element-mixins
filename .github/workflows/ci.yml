@@ -11,6 +11,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
@@ -21,8 +24,6 @@ jobs:
           cache: true
       - name: Check formatting, lint, and types
         run: vp check
-      - name: Install Playwright Chromium
-        run: vp exec playwright install --with-deps --only-shell chromium
       - name: Run browser tests
         run: vp run test:browser
 
