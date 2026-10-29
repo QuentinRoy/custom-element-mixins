@@ -75,12 +75,12 @@ function createAccessor(
 	}
 	return {
 		get(this: AttributeTarget) {
-			let value = this.getAttribute(attributeName)
+			let value = this.getAttribute(attributeName) ?? undefined
 			return parse.call(this, value)
 		},
 		set(this: AttributeTarget, value: unknown) {
 			let serialized = serialize.call(this, value)
-			if (serialized == null) {
+			if (serialized === undefined) {
 				this.removeAttribute(attributeName)
 			} else {
 				this.setAttribute(attributeName, serialized)

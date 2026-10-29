@@ -14,7 +14,7 @@ class AttributeTarget {
 }
 
 const mockSerializer: AttributeSerializer<unknown, unknown> = {
-	parse(value: string | null) {
+	parse(value: string | undefined) {
 		return value
 	},
 	serialize(value: unknown) {
@@ -28,8 +28,8 @@ test("Type of WithAttributeProps parameters", () => {
 			Class<AttributeTarget & { a: "a" }, ["arg1", "arg2"]>,
 			{
 				x: {
-					parse(value: string | null): "x"
-					serialize(value: "x"): string | null
+					parse(value: string | undefined): "x"
+					serialize(value: "x"): string | undefined
 				}
 			}
 		>
@@ -46,12 +46,12 @@ test("Type of WithAttributeProps asymmetric parameters", () => {
 
 	const Mixed = WithAttributeProps(Target, {
 		mode: {
-			parse(value: string | null): "a" | "unknown" {
+			parse(value: string | undefined): "a" | "unknown" {
 				if (value === "a") return "a"
 				return this.unknown
 			},
-			serialize(value: "a" | "b" | "unknown"): string | null {
-				return value === "unknown" ? null : value
+			serialize(value: "a" | "b" | "unknown"): string | undefined {
+				return value === "unknown" ? undefined : value
 			},
 		},
 	})
@@ -72,11 +72,11 @@ test("Type of WithAttributeProps forbidden asymmetric parameters", () => {
 
 	const Forbidden = WithAttributeProps(Target, {
 		attr: {
-			parse(_value: string | null): "a" | "b" {
+			parse(_value: string | undefined): "a" | "b" {
 				return "a"
 			},
 			// @ts-expect-error serialize must accept all values returned by parse.
-			serialize(value: "a"): string | null {
+			serialize(value: "a"): string | undefined {
 				return value
 			},
 		},
@@ -87,18 +87,18 @@ test("Type of WithAttributeProps forbidden asymmetric parameters", () => {
 test("Type of AttributeSerializer", () => {
 	type T = AttributeSerializer<unknown, "test">
 	expectTypeOf<Simplify<T>>().toEqualTypeOf<{
-		parse(value: string | null): "test"
-		serialize(value: "test"): string | null
+		parse(value: string | undefined): "test"
+		serialize(value: "test"): string | undefined
 	}>()
 
-	type U = AttributeSerializer<unknown, "a" | "b" | null>
+	type U = AttributeSerializer<unknown, "a" | "b" | undefined>
 	expectTypeOf<Simplify<U>>().toEqualTypeOf<{
-		parse(value: string | null): "a" | "b" | null
-		serialize(value: "a" | "b" | null): string | null
+		parse(value: string | undefined): "a" | "b" | undefined
+		serialize(value: "a" | "b" | undefined): string | undefined
 	}>()
 
 	type D = {
-		parse(value: string | null): "a"
+		parse(value: string | undefined): "a"
 		serialize(value: "a" | "b" | "c"): string
 	}
 	expectTypeOf<
@@ -131,14 +131,14 @@ test("Type of AttributeSerializer", () => {
 
 	type V = Simplify<AttributeSerializer<unknown, "test">>
 	expectTypeOf<V>().toEqualTypeOf<{
-		parse(value: string | null): "test"
-		serialize(value: "test"): string | null
+		parse(value: string | undefined): "test"
+		serialize(value: "test"): string | undefined
 	}>()
 
-	type W = Simplify<AttributeSerializer<unknown, "a" | "b" | null>>
+	type W = Simplify<AttributeSerializer<unknown, "a" | "b" | undefined>>
 	expectTypeOf<W>().toEqualTypeOf<{
-		parse(value: string | null): "a" | "b" | null
-		serialize(value: "a" | "b" | null): string | null
+		parse(value: string | undefined): "a" | "b" | undefined
+		serialize(value: "a" | "b" | undefined): string | undefined
 	}>()
 })
 
@@ -154,10 +154,10 @@ test("WithAttributeProps should not discards static members", () => {
 
 	const Enhanced = WithAttributeProps(BaseWithStatics, {
 		attr: {
-			parse(value: string | null): string {
+			parse(value: string | undefined): string {
 				return value ?? ""
 			},
-			serialize(value: string): string | null {
+			serialize(value: string): string | undefined {
 				return value
 			},
 		},
