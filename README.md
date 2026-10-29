@@ -283,11 +283,23 @@ vp run test:browser
 
 Use `vp test watch` to watch tests and `vp fmt` to format code. Tests include TypeScript type assertions.
 
-Package metadata and published files are configured in `jsr.json`. CI publishes to JSR after checks pass on `main`. To check the package before publishing:
+## Releases
 
-```bash
-vp dlx jsr publish --dry-run
-```
+Package metadata and published files are configured in `jsr.json`.
+
+1. Set the same new version in `jsr.json` and `package.json`.
+2. Add release notes under `## <version>` in `CHANGEL0G.md`, without the `v` prefix.
+3. Check the package before publishing:
+
+   ```bash
+   vp dlx jsr publish --dry-run
+   ```
+
+4. Push the changes to `main`.
+
+After checks pass, a push that changes the version in `jsr.json` publishes to JSR, then creates a GitHub release tagged `v<version>` at the pushed commit, using the matching changelog notes. Pushes with unchanged versions run checks but skip both publishing steps.
+
+To recover a partial release, rerun the failed `publish` job in its original GitHub Actions run. The retry uses the original commit and skips existing JSR versions and GitHub releases. Later pushes with unchanged versions do not retry failed releases.
 
 ## License
 

@@ -30,15 +30,60 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write # The OIDC ID token is used for authentication with JSR.
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Install Vite+
         uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version-file: .node-version
           cache: true
+      - name: Check release version
+        id: release
+        env:
+          PREVIOUS_SHA: ${{ github.event.before }}
+        shell: bash
+        run: |
+          version=$(node -p "require('./jsr.json').version")
+          previous_version=""
+          if [[ ! "$PREVIOUS_SHA" =~ ^0+$ ]]; then
+            previous_version=$(git show "$PREVIOUS_SHA:jsr.json" | node -p \
+              "JSON.parse(require('node:fs').readFileSync(0, 'utf8')).version")
+          fi
+          if [[ "$version" != "$previous_version" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish to JSR
+        if: steps.release.outputs.changed == 'true'
         run: vp dlx jsr publish
+      - name: Create GitHub release
+        if: steps.release.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(node -p "require('./jsr.json').version")
+          tag="v$version"
+          releases=$(gh api --paginate "repos/$GH_REPO/releases" --jq '.[].tag_name')
+          if grep -Fxq "$tag" <<< "$releases"; then
+            echo "Release $tag already exists."
+            exit 0
+          fi
+
+          notes="$RUNNER_TEMP/release-notes.md"
+          awk -v heading="## $version" '
+            $0 == heading { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGEL0G.md > "$notes"
+          if ! grep -q '[^[:space:]]' "$notes"; then
+            echo "No changelog entry found for $version." >&2
+            exit 1
+          fi
+
+          gh release create "$tag" --target "$GITHUB_SHA" \
+            --title "$version" --notes-file "$notes"
