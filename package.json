@@ -1,0 +1,22 @@
+{
+	"name": "@quentinroy/custom-element-mixins",
+	"version": "0.4.2",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"scripts": {
+		"test": "vp test --typecheck",
+		"test:browser": "vp test --browser --typecheck",
+		"test:watch": "vp test watch --typecheck",
+		"check": "vp check",
+		"lint": "vp lint",
+		"format": "vp fmt"
+	},
+	"devDependencies": {
+		"@vitest/browser-playwright": "catalog:",
+		"playwright": "^1.55.1",
+		"typescript": "^6.0.2",
+		"vite-plus": "catalog:"
+	},
+	"packageManager": "pnpm@10.34.7"
+}

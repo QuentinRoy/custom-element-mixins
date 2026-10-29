@@ -35,9 +35,7 @@ type AttributePropAccessors<
  * @returns A constructor for the new class that extends the base class and has the props defined by the serializers parameter.
  */
 export function WithAttributeProps<
-	// biome-ignore lint/suspicious/noExplicitAny: Any constructor is allowed.
 	Base extends Class<AttributeTarget, any[]>,
-	// biome-ignore lint/suspicious/noExplicitAny: Any serializer is allowed.
 	InnerSerializer extends Record<string, UnconstrainedSerializer<any, any>>,
 >(
 	Base: Base,
@@ -56,11 +54,7 @@ export function WithAttributeProps<
 }
 
 function createAccessors<
-	InnerSerializers extends Record<
-		string,
-		// biome-ignore lint/suspicious/noExplicitAny: value types vary per serializer.
-		UnconstrainedSerializer<any, any>
-	>,
+	InnerSerializers extends Record<string, UnconstrainedSerializer<any, any>>,
 >(attributeSerializers: InnerSerializers) {
 	let result = {} as Record<string, unknown>
 	for (let key in attributeSerializers) {
@@ -72,7 +66,6 @@ function createAccessors<
 
 function createAccessor(
 	name: string,
-	// biome-ignore lint/suspicious/noExplicitAny: value type is opaque at runtime.
 	serializer: UnconstrainedSerializer<any, any>,
 ) {
 	let attributeName = toKebabCase(name)

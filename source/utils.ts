@@ -106,5 +106,4 @@ export function toKebabCase(str: string): string {
 
 export class Empty {}
 
-// biome-ignore lint/suspicious/noExplicitAny: Any constructor is allowed.
 export interface AnyConstructor extends Class<object, any[]> {}

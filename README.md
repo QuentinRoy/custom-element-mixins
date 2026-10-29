@@ -1,21 +1,49 @@
 # custom-element-mixins
 
-TypeScript-first mixins for custom elements with strong typing and a very small JavaScript size (in kB).
+TypeScript mixins for custom elements, with property types inferred from accessors and attribute serializers. The library has no runtime dependencies.
 
-Most of the complexity of this library lives in TypeScript types, not in runtime code.
+- `WithAccessors`: define typed getters and setters on instances.
+- `WithAttributeProps`: map typed properties to HTML attributes.
+- Built-in serializers: `number`, `string`, `boolean`, and `pickList`.
 
-## Why This Library
+## Install
 
-- Strong typing for hard-to-type patterns: accessors, attribute-backed props, and serializer-driven value transformations.
-- Tiny JS size (kB): the emitted JavaScript is intentionally very small and dependency-free.
-- Better DX for custom elements: you get typed properties from attributes.
+This package is published on [JSR](https://jsr.io/@quentinroy/custom-element-mixins).
 
-## Flagship Example: `HTMLBookCardElement`
+```bash
+# Vite+ (vp)
+vp add jsr:@quentinroy/custom-element-mixins
 
-This is the main use case this library is built for: define typed attribute-backed props on a custom element, with properties and HTML attributes always in sync.
+# pnpm 10.9+
+pnpm add jsr:@quentinroy/custom-element-mixins
+
+# npm
+npx jsr add @quentinroy/custom-element-mixins
+
+# Yarn 4.9+
+yarn add jsr:@quentinroy/custom-element-mixins
+
+# Deno
+deno add jsr:@quentinroy/custom-element-mixins
+```
 
 ```ts
-import { WithAttributeProps, number, string, boolean, pickList } from "jsr:@quentinroy/custom-element-mixins";
+import {
+  WithAccessors,
+  WithAttributeProps,
+  number,
+  string,
+  boolean,
+  pickList,
+} from "@quentinroy/custom-element-mixins";
+```
+
+## Example
+
+This custom element keeps its properties and HTML attributes in sync:
+
+```ts
+import { WithAttributeProps, number, string, boolean, pickList } from "@quentinroy/custom-element-mixins";
 
 class HTMLBookCardElement extends WithAttributeProps(HTMLElement, {
   page: number({ default: 1 }),
@@ -40,6 +68,7 @@ class HTMLBookCardElement extends WithAttributeProps(HTMLElement, {
   }
 }
 
+customElements.define("book-card", HTMLBookCardElement);
 const el = new HTMLBookCardElement();
 
 // Prop -> attribute
@@ -63,49 +92,12 @@ el.setAttribute("variant", "primary");
 // el.variant === "primary"
 ```
 
-## Features
-
-- `WithAccessors`: define typed getters/setters on instances
-- `WithAttributeProps`: map typed properties to attributes
-- Built-in serializers: `number`, `string`, `boolean`, `pickList`
-
-## Install
-
-This package is published on [JSR](https://jsr.io/@quentinroy/custom-element-mixins).
-
-```bash
-# pnpm
-pnpm add jsr:@quentinroy/custom-element-mixins
-
-# npm
-npx jsr add @quentinroy/custom-element-mixins
-
-# yarn
-yarn add jsr:@quentinroy/custom-element-mixins
-
-# deno
-deno add jsr:@quentinroy/custom-element-mixins
-```
-
-```ts
-import {
-  WithAccessors,
-  WithAttributeProps,
-  number,
-  string,
-  boolean,
-  pickList,
-} from "@quentinroy/custom-element-mixins";
-```
-
-## API
-
 ## `WithAccessors`
 
 Defines property descriptors on each instance using `Object.defineProperties`.
 
 ```ts
-import { WithAccessors } from "jsr:@quentinroy/custom-element-mixins";
+import { WithAccessors } from "@quentinroy/custom-element-mixins";
 
 class CounterBase {
   count = 0;
@@ -128,10 +120,10 @@ counter.doubled = 10;
 // counter.doubled === 10
 ```
 
-You can also use the higher-order class directly in `extends`:
+You can also use the returned class directly in `extends`:
 
 ```ts
-import { WithAccessors } from "jsr:@quentinroy/custom-element-mixins";
+import { WithAccessors } from "@quentinroy/custom-element-mixins";
 
 class Counter extends WithAccessors(class {
   count = 0;
@@ -164,7 +156,7 @@ Notes:
 
 ## `WithAttributeProps`
 
-Builds typed properties backed by attributes. Typically, base class would be `HTMLElement` or a subclass, but it can be any class that implements:
+Builds typed properties backed by attributes. The base class is usually `HTMLElement` or a subclass. It can be any class that implements:
 
 - `getAttribute(name: string): string | null`
 - `setAttribute(name: string, value: string): void`
@@ -173,7 +165,7 @@ Builds typed properties backed by attributes. Typically, base class would be `HT
 Property names are converted to kebab-case attribute names (`myAttr` -> `my-attr`).
 
 ```ts
-import { WithAttributeProps, number, string, boolean, pickList } from "jsr:@quentinroy/custom-element-mixins";
+import { WithAttributeProps, number, string, boolean, pickList } from "@quentinroy/custom-element-mixins";
 
 const WithProps = WithAttributeProps(HTMLElement, {
   page: number({ default: 1 }),
@@ -182,6 +174,7 @@ const WithProps = WithAttributeProps(HTMLElement, {
   variant: pickList({ values: ["primary", "secondary"], default: "primary" }),
 });
 
+customElements.define("attribute-props-example", WithProps);
 const el = new WithProps();
 el.page = 3; // prop -> attribute: page="3"
 el.setAttribute("page", "7"); // attribute -> prop
@@ -200,54 +193,6 @@ el.setAttribute("variant", "primary"); // attribute -> prop
 // el.variant === "primary"
 ```
 
-You can also use the higher-order class directly in `extends`:
-
-```ts
-import { WithAttributeProps, number, string, boolean, pickList } from "jsr:@quentinroy/custom-element-mixins";
-
-class HTMLBookCardElement extends WithAttributeProps(HTMLElement, {
-  page: number({ default: 1 }),
-  bookTitle: string(),
-  open: boolean(),
-  variant: pickList({ values: ["primary", "secondary"], default: "primary" }),
-}) {
-  static get observedAttributes() {
-    return ["page", "book-title", "open", "variant"];
-  }
-
-  connectedCallback() {
-    this.#render();
-  }
-
-  attributeChangedCallback() {
-    this.#render();
-  }
-
-  #render() {
-    this.textContent = `${this.bookTitle} (page ${this.page}) - ${this.variant}`;
-  }
-}
-
-const el = new HTMLBookCardElement();
-el.page = 3; // prop -> attribute
-el.setAttribute("page", "12"); // attribute -> prop
-// el.page === 12
-
-el.open = true; // prop -> attribute
-el.removeAttribute("open"); // attribute -> prop
-// el.open === false
-
-el.bookTitle = "Dune"; // prop -> attribute
-el.setAttribute("book-title", "Foundation"); // attribute -> prop
-// el.bookTitle === "Foundation"
-
-el.variant = "secondary"; // prop -> attribute
-el.setAttribute("variant", "primary"); // attribute -> prop
-// el.variant === "primary"
-```
-
-This is the same pattern showcased in the flagship `HTMLBookCardElement` example above.
-
 You can also provide custom serializers:
 
 ```ts
@@ -263,13 +208,11 @@ const WithCustom = WithAttributeProps(HTMLElement, {
 });
 ```
 
-## Serializers
-
 ## `number(options?)`
 
 - `number()` -> prop type: `number | null`
 - `number({ default: n })` -> prop type: `number`
-- If attribute value is missing or invalid, parse returns the default when provided, otherwise `null`.
+- If the attribute is missing or invalid, parsing returns the default when provided, otherwise `null`.
 
 Parsing uses JavaScript's `Number()` conversion. By default, empty and whitespace-only strings become `0`, and `"Infinity"` and `"-Infinity"` are accepted. `NaN` and malformed numeric text use the fallback.
 
@@ -308,12 +251,26 @@ These options affect parsing. Serialization still converts numbers to strings: w
 
 - Restricts to a fixed list of string values.
 - Returns `null` when missing and no default is provided.
-- If attribute value is outside `values`, parse returns the default when provided, otherwise `null`.
+- If the attribute value is outside `values`, parsing returns the default when provided, otherwise `null`.
 
 ## Development
 
+Install [Vite+](https://viteplus.dev/guide/). The project pins Node.js 26.13.0 in `.node-version` and uses pnpm through `vp`.
+
 ```bash
-pnpm test
+vp install
+vp exec playwright install --with-deps --only-shell chromium
+vp check
+vp test
+vp run test:browser
+```
+
+Use `vp test watch` to watch tests and `vp fmt` to format code. Tests include TypeScript type assertions.
+
+Package metadata and published files are configured in `jsr.json`. CI publishes to JSR after checks pass on `main`. To check the package before publishing:
+
+```bash
+vp dlx jsr publish --dry-run
 ```
 
 ## License

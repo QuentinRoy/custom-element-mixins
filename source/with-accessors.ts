@@ -21,7 +21,6 @@ export function WithAccessors<
 	Base extends AnyConstructor,
 	InnerAccessors extends BindAccessors<
 		Base,
-		// biome-ignore lint/suspicious/noExplicitAny: Any accessor is allowed.
 		Record<string, UnconstrainedAccessor<any, any>>
 	>,
 >(

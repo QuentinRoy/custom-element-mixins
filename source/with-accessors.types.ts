@@ -184,48 +184,18 @@ type MergeAccessorProps<This, AccessorProps> = Simplify<
 >
 
 type WritableAccessorKeys<T> = {
-	[K in keyof T]: T[K] extends BoundWritableAccessor<
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any,
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any,
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any
-	>
-		? K
-		: never
+	[K in keyof T]: T[K] extends BoundWritableAccessor<any, any, any> ? K : never
 }[keyof T]
 
 type ReadonlyAccessorKeys<T> = {
-	[K in keyof T]: T[K] extends BoundReadonlyAccessor<
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any,
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any
-	>
-		? K
-		: never
+	[K in keyof T]: T[K] extends BoundReadonlyAccessor<any, any> ? K : never
 }[keyof T]
 
 type WritableAccessorValue<T> =
-	T extends BoundWritableAccessor<
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any,
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any,
-		infer SetValue
-	>
-		? SetValue
-		: never
+	T extends BoundWritableAccessor<any, any, infer SetValue> ? SetValue : never
 
 type ReadonlyAccessorValue<T> =
-	T extends BoundReadonlyAccessor<
-		// biome-ignore lint/suspicious/noExplicitAny: any is required in conditional helpers.
-		any,
-		infer GetValue
-	>
-		? GetValue
-		: never
+	T extends BoundReadonlyAccessor<any, infer GetValue> ? GetValue : never
 
 type AccessorProperties<T> = Simplify<
 	{
