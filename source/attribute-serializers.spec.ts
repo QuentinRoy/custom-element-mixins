@@ -1,4 +1,4 @@
-import { expect, test } from "vitest"
+import { expect, test } from "vite-plus/test"
 import { boolean, number, pickList, string } from "./attribute-serializers.ts"
 
 test("number() without default", () => {
@@ -56,15 +56,14 @@ test("number() can reject non-finite values without rejecting blank attributes",
 	expect(n.parse("1e3")).toBe(1000)
 })
 
-test.each([
-	NaN,
-	Infinity,
-	-Infinity,
-])("number() rejects a non-finite default %s when finite is enabled", (defaultValue) => {
-	expect(() => number({ default: defaultValue, finite: true })).toThrow(
-		RangeError,
-	)
-})
+test.each([NaN, Infinity, -Infinity])(
+	"number() rejects a non-finite default %s when finite is enabled",
+	(defaultValue) => {
+		expect(() => number({ default: defaultValue, finite: true })).toThrow(
+			RangeError,
+		)
+	},
+)
 
 test("number() can combine blank rejection and finite validation", () => {
 	let n = number({ default: 7, rejectEmpty: true, finite: true })
@@ -103,16 +102,15 @@ test("number() restrictions can be explicitly disabled", () => {
 	expect(n.parse("-Infinity")).toBe(-Infinity)
 })
 
-test.each([
-	NaN,
-	Infinity,
-	-Infinity,
-])("number() still allows a non-finite default %s when finite is disabled", (defaultValue) => {
-	expect(number({ default: defaultValue }).parse(null)).toBe(defaultValue)
-	expect(
-		number({ default: defaultValue, finite: false }).parse("invalid"),
-	).toBe(defaultValue)
-})
+test.each([NaN, Infinity, -Infinity])(
+	"number() still allows a non-finite default %s when finite is disabled",
+	(defaultValue) => {
+		expect(number({ default: defaultValue }).parse(null)).toBe(defaultValue)
+		expect(
+			number({ default: defaultValue, finite: false }).parse("invalid"),
+		).toBe(defaultValue)
+	},
+)
 
 test("string() without default", () => {
 	let s = string()

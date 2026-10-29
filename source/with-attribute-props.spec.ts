@@ -1,4 +1,4 @@
-import { expect, expectTypeOf, test } from "vitest"
+import { expect, expectTypeOf, test } from "vite-plus/test"
 import { number } from "./attribute-serializers.ts"
 import { WithAttributeProps } from "./with-attribute-props.ts"
 

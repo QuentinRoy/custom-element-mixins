@@ -14,14 +14,17 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
-      - name: Install Deno
-        uses: denoland/setup-deno@v2
+      - name: Install Vite+
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
-          deno-version: v2.x
+          node-version-file: .node-version
+          cache: true
+      - name: Check formatting, lint, and types
+        run: vp check
       - name: Install Playwright Chromium
-        run: deno run -A npm:playwright install --with-deps --only-shell chromium
+        run: vp exec playwright install --with-deps --only-shell chromium
       - name: Run browser tests
-        run: deno task test:browser
+        run: vp run test:browser
 
   publish:
     needs: test
@@ -33,9 +36,10 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
-      - name: Install Deno
-        uses: denoland/setup-deno@v2
+      - name: Install Vite+
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
-          deno-version: v2.x
+          node-version-file: .node-version
+          cache: true
       - name: Publish to JSR
-        run: deno publish
+        run: vp dlx jsr publish

@@ -1,4 +1,4 @@
-import { expectTypeOf, test } from "vitest"
+import { expectTypeOf, test } from "vite-plus/test"
 import { boolean, number, string } from "./attribute-serializers.ts"
 import type { Simplify } from "./utils.ts"
 
@@ -7,13 +7,13 @@ test("Type of number()", () => {
 	expectTypeOf(n1).toEqualTypeOf<{
 		parse(a: string | null): number | null
 		serialize(v: number | null): string | null
-	}>
+	}>()
 
 	let n2 = number({ default: 0 })
 	expectTypeOf(n2).toEqualTypeOf<{
 		parse(a: string | null): number
 		serialize(v: number): string | null
-	}>
+	}>()
 })
 
 test("number() options preserve the inferred property types", () => {
