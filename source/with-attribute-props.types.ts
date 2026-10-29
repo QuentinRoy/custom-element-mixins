@@ -5,7 +5,7 @@ import type { Class, ConstructorWithStatics, Simplify } from "./utils.ts"
  *
  * `parse` receives the raw attribute value and returns the property value.
  * `serialize` receives the property value and returns the attribute string to
- * store, or `null` to remove the attribute.
+ * store, or `undefined` to remove the attribute.
  *
  * @typeParam This Type of `this` inside the serializer functions.
  * @typeParam GetValue Type returned by `parse`.
@@ -13,25 +13,25 @@ import type { Class, ConstructorWithStatics, Simplify } from "./utils.ts"
  */
 export interface AttributeSerializer<This, GetValue, SetValue = GetValue> {
 	/**
-	 * Parses a raw attribute string (or null when absent) into a property value.
+	 * Parses a raw attribute string (or undefined when absent) into a property value.
 	 *
 	 * @param attributeValue Raw attribute value.
 	 */
-	parse: (this: This, attributeValue: string | null) => GetValue
+	parse: (this: This, attributeValue: string | undefined) => GetValue
 	/**
-	 * Serializes a property value to an attribute string, or null to remove it.
+	 * Serializes a property value to an attribute string, or undefined to remove it.
 	 *
 	 * @param propValue Property value to serialize.
 	 */
-	serialize: (this: This, propValue: SetValue) => string | null
+	serialize: (this: This, propValue: SetValue) => string | undefined
 }
 
 // I am not sure why, but it does seem that at least serialize
 // must be made optional here. It may be because of the serialize protection
 // there is in the Serializer type.
 export interface UnconstrainedSerializer<GetValue, SetValue> {
-	parse?: (a: string | null) => GetValue
-	serialize?: (value: SetValue) => string | null
+	parse?: (a: string | undefined) => GetValue
+	serialize?: (value: SetValue) => string | undefined
 }
 
 export type AttributeTarget = Pick<
@@ -82,8 +82,8 @@ export type AccessorsFromSerializers<D> = {
 }
 
 interface InputSerializer<GetValue, SetValue = GetValue> {
-	parse: (a: string | null) => GetValue
-	serialize: (value: SetValue) => string | null
+	parse: (a: string | undefined) => GetValue
+	serialize: (value: SetValue) => string | undefined
 }
 
 type BoundSerializerContext<
@@ -129,11 +129,14 @@ type BindInputSerializer<
 		>
 
 type ValidateSerializer<S> = S extends {
-	parse: (attributeValue: string | null) => infer GetValue
-	serialize: (this: infer This, propValue: infer SetValue) => string | null
+	parse: (attributeValue: string | undefined) => infer GetValue
+	serialize: (this: infer This, propValue: infer SetValue) => string | undefined
 }
 	? Omit<S, "serialize"> & {
-			serialize: (this: This, propValue: GetValue | SetValue) => string | null
+			serialize: (
+				this: This,
+				propValue: GetValue | SetValue,
+			) => string | undefined
 		}
 	: S
 

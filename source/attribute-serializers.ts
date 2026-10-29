@@ -1,7 +1,7 @@
 import type { AttributeSerializer } from "./with-attribute-props.ts"
 
-interface NumberOptions {
-	default?: number | null | undefined
+interface NumberOptions<Default> {
+	default?: Default
 	rejectEmpty?: boolean
 	finite?: boolean
 }
@@ -11,35 +11,37 @@ interface NumberOptions {
  *
  * `parse` converts the attribute string using `Number()`.
  * When the attribute is missing, or is not a valid number, it returns the
- * provided default or `null`.
+ * provided default or `undefined`.
  *
  * @param options Configuration for the serializer.
  * @param options.default Value returned when the attribute is missing or invalid.
  * @param options.rejectEmpty Treat empty and whitespace-only strings as invalid. Defaults to false.
  * @param options.finite Reject non-finite numbers. Defaults to false.
- * @throws {RangeError} If `finite` is true and the provided default is non-finite.
+ * @throws {RangeError} If `finite` is true and the provided default is a non-finite number.
  */
-export function number(
-	options: NumberOptions & {
-		default: number
+export function number<const Default>(
+	options: NumberOptions<Default> & {
+		default: Default
 	},
-): AttributeSerializer<unknown, number>
-export function number(
-	options?: NumberOptions & {
-		default?: null | undefined
-	},
-): AttributeSerializer<unknown, number | null>
+): AttributeSerializer<unknown, number | Default>
+export function number<const Default = undefined>(
+	options?: NumberOptions<Default>,
+): AttributeSerializer<unknown, number | Default | undefined>
 export function number({
-	default: defaultValue = null,
+	default: defaultValue,
 	rejectEmpty = false,
 	finite = false,
-}: NumberOptions = {}) {
-	if (finite && defaultValue != null && !Number.isFinite(defaultValue)) {
+}: NumberOptions<unknown> = {}) {
+	if (
+		finite &&
+		typeof defaultValue === "number" &&
+		!Number.isFinite(defaultValue)
+	) {
 		throw new RangeError("The default must be finite when finite is enabled.")
 	}
 	return {
-		parse(value: string | null) {
-			if (value == null || (rejectEmpty && value.trim() === "")) {
+		parse(value: string | undefined) {
+			if (value === undefined || (rejectEmpty && value.trim() === "")) {
 				return defaultValue
 			}
 			let parsed = Number(value)
@@ -48,8 +50,8 @@ export function number({
 			}
 			return parsed
 		},
-		serialize(value: number | null) {
-			return value == null ? null : String(value)
+		serialize(value: unknown) {
+			return typeof value === "number" ? String(value) : undefined
 		},
 	}
 }
@@ -63,23 +65,23 @@ export function number({
  * @param options Configuration for the serializer.
  * @param options.default Value returned when the attribute is missing.
  */
-export function string(options: {
-	default: string
-}): AttributeSerializer<unknown, string>
-export function string(options?: {
-	default?: undefined | null
-}): AttributeSerializer<unknown, string | null>
+export function string<const Default>(options: {
+	default: Default
+}): AttributeSerializer<unknown, string | Default>
+export function string<const Default = undefined>(options?: {
+	default?: Default
+}): AttributeSerializer<unknown, string | Default | undefined>
 export function string({
-	default: defaultValue = null,
+	default: defaultValue,
 }: {
-	default?: string | null | undefined
+	default?: unknown
 } = {}) {
 	return {
-		parse(value: string | null) {
+		parse(value: string | undefined) {
 			return value ?? defaultValue
 		},
-		serialize(value: string | null) {
-			return value ?? null
+		serialize(value: unknown) {
+			return typeof value === "string" ? value : undefined
 		},
 	}
 }
@@ -88,7 +90,7 @@ export function string({
  * Creates a presence-based boolean attribute serializer.
  *
  * `parse` returns `true` when the attribute exists and `false` otherwise.
- * `serialize` maps `true` to an empty string and `false` to `null`.
+ * `serialize` maps `true` to an empty string and `false` to `undefined`.
  *
  * @param _options Reserved for API consistency. No options are currently supported.
  */
@@ -96,11 +98,11 @@ export function boolean(
 	_options: Record<PropertyKey, never> = {},
 ): AttributeSerializer<unknown, boolean> {
 	return {
-		parse(value: string | null) {
-			return value != null
+		parse(value: string | undefined) {
+			return value !== undefined
 		},
 		serialize(value: boolean) {
-			return value ? "" : null
+			return value ? "" : undefined
 		},
 	}
 }
@@ -109,34 +111,37 @@ export function boolean(
  * Creates a serializer constrained to a fixed list of string values.
  *
  * If the attribute is missing, or has a value outside `options.values`,
- * `parse` returns the provided default or `null`.
+ * `parse` returns the provided default or `undefined`.
  *
  * @param options Configuration for the serializer.
  * @param options.values Allowed string values.
  * @param options.default Value returned when the attribute is missing or invalid.
  */
-export function pickList<const K extends string>(options: {
-	default?: undefined
+export function pickList<const K extends string, const Default = K>(options: {
+	default: Default
 	values: Readonly<Array<K>>
-}): AttributeSerializer<unknown, K | null>
-export function pickList<const K extends string>(options: {
-	default: NoInfer<K>
+}): AttributeSerializer<unknown, K | Default>
+export function pickList<
+	const K extends string,
+	const Default = undefined,
+>(options: {
+	default?: Default
 	values: Readonly<Array<K>>
-}): AttributeSerializer<unknown, K>
+}): AttributeSerializer<unknown, K | Default | undefined>
 export function pickList<const K extends string>(options: {
-	default?: K
+	default?: unknown
 	values: Readonly<Array<K>>
-}): AttributeSerializer<unknown, K | null> {
+}) {
 	let values = new Set(options.values)
 	return {
-		parse(value) {
-			if (value == null || !values.has(value as K)) {
-				return options.default ?? null
+		parse(value: string | undefined) {
+			if (value === undefined || !values.has(value as K)) {
+				return options.default
 			}
 			return value as K
 		},
-		serialize(value) {
-			return value
+		serialize(value: unknown) {
+			return typeof value === "string" ? value : undefined
 		},
 	}
 }

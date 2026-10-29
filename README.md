@@ -162,7 +162,7 @@ Builds typed properties backed by attributes. The base class is usually `HTMLEle
 - `setAttribute(name: string, value: string): void`
 - `removeAttribute(name: string): void`
 
-Property names are converted to kebab-case attribute names (`myAttr` -> `my-attr`).
+Property names are converted to kebab-case attribute names (`myAttr` -> `my-attr`). Missing DOM attributes return `null`; `WithAttributeProps` converts that to `undefined` before calling a serializer.
 
 ```ts
 import { WithAttributeProps, number, string, boolean, pickList } from "@quentinroy/custom-element-mixins";
@@ -193,12 +193,12 @@ el.setAttribute("variant", "primary"); // attribute -> prop
 // el.variant === "primary"
 ```
 
-You can also provide custom serializers:
+You can also provide custom serializers. Their `parse` function receives `string | undefined`, with `undefined` for an absent attribute. Their `serialize` function returns a string to store or `undefined` to remove the attribute:
 
 ```ts
 const WithCustom = WithAttributeProps(HTMLElement, {
   mode: {
-    parse(value: string | null): "auto" | "manual" {
+    parse(value: string | undefined): "auto" | "manual" {
       return value === "manual" ? "manual" : "auto";
     },
     serialize(value: "auto" | "manual"): string {
@@ -210,9 +210,10 @@ const WithCustom = WithAttributeProps(HTMLElement, {
 
 ## `number(options?)`
 
-- `number()` -> prop type: `number | null`
+- `number()` -> prop type: `number | undefined`
 - `number({ default: n })` -> prop type: `number`
-- If the attribute is missing or invalid, parsing returns the default when provided, otherwise `null`.
+- `number({ default: Symbol("missing") })` -> prop type: `number | symbol`
+- If the attribute is missing or invalid, parsing returns the default when provided, otherwise `undefined`.
 
 Parsing uses JavaScript's `Number()` conversion. By default, empty and whitespace-only strings become `0`, and `"Infinity"` and `"-Infinity"` are accepted. `NaN` and malformed numeric text use the fallback.
 
@@ -232,26 +233,41 @@ rate.parse(" 24 ");     // 24
 - `rejectEmpty`: empty and whitespace-only strings use the fallback.
 - `finite`: non-finite results, including overflow, use the fallback. A non-finite numeric `default` throws a `RangeError` when the serializer is created.
 
-Both options default to `false` and work independently. Without a numeric default, rejected input returns `null`. Nonempty input still follows `Number()`, including hexadecimal and scientific notation.
+Both options default to `false` and work independently. Without a default, rejected input returns `undefined`. Nonempty input still follows `Number()`, including hexadecimal and scientific notation.
 
 These options affect parsing. Serialization still converts numbers to strings: with the options above, assigning `el.rate = Infinity` stores `rate="Infinity"`, and reading `el.rate` returns `60`.
 
 ## `string(options?)`
 
-- `string()` -> prop type: `string | null`
+- `string()` -> prop type: `string | undefined`
 - `string({ default: s })` -> prop type: `string`
+- `string({ default: Symbol("missing") })` -> prop type: `string | symbol`
 
 ## `boolean()`
 
 - Presence-based boolean attribute.
 - Parse: attribute present -> `true`, absent -> `false`.
-- Serialize: `true` -> `""`, `false` -> `null`.
+- Serialize: `true` -> `""`, `false` -> `undefined`.
 
 ## `pickList({ values, default? })`
 
 - Restricts to a fixed list of string values.
-- Returns `null` when missing and no default is provided.
-- If the attribute value is outside `values`, parsing returns the default when provided, otherwise `null`.
+- Returns `undefined` when missing and no default is provided.
+- If the attribute value is outside `values`, parsing returns the default when provided, otherwise `undefined`.
+
+The `number`, `string`, and `pickList` serializers accept defaults of any type. The property type includes the default's type. A `pickList` default can also be a string outside the allowed values; it does not add that string to the allowed attribute values.
+
+```ts
+const missing = Symbol("missing");
+const count = number({ default: missing, finite: true });
+
+count.parse(undefined);   // missing
+count.parse("invalid");   // missing
+count.parse("42");        // 42
+count.serialize(missing); // undefined (removes the attribute)
+```
+
+Defaults outside the serializer's normal value type (`number` for `number`, `string` for `string` and `pickList`) serialize to `undefined`, removing the attribute. Defaults of the normal type serialize as usual. Omitting a default is equivalent to `{ default: undefined }`. Explicit defaults, including `null`, are returned unchanged.
 
 ## Development
 

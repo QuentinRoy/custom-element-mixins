@@ -1,5 +1,12 @@
 # @quentinroy/custom-element-mixins
 
+## Unreleased
+
+### Major Changes
+
+- Use `undefined` for missing attribute values throughout the serializer API. Custom serializers now receive `string | undefined` and return `string | undefined` when serializing; returning `undefined` removes the attribute. `WithAttributeProps` converts the DOM's missing-attribute `null` to `undefined`.
+- Allow defaults of any type in `number`, `string`, and `pickList`. Omitted defaults now return `undefined`; explicit defaults, including `null`, are preserved. Defaults outside the serializer's normal value type remove the attribute when assigned.
+
 ## 0.2.0
 
 ### Major Changes
