@@ -16,6 +16,23 @@ test("Type of number()", () => {
 	}>
 })
 
+test("number() options preserve the inferred property types", () => {
+	for (let options of [
+		{ rejectEmpty: true },
+		{ finite: true },
+		{ rejectEmpty: true, finite: true },
+	]) {
+		expectTypeOf(number(options)).toEqualTypeOf(number())
+		expectTypeOf(number({ ...options, default: null })).toEqualTypeOf(number())
+		expectTypeOf(number({ ...options, default: undefined })).toEqualTypeOf(
+			number(),
+		)
+		expectTypeOf(number({ ...options, default: 0 })).toEqualTypeOf(
+			number({ default: 0 }),
+		)
+	}
+})
+
 test("Type of string()", () => {
 	let s2 = string()
 	expectTypeOf<Simplify<typeof s2>>().toEqualTypeOf<{

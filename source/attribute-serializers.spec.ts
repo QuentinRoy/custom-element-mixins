@@ -20,9 +20,98 @@ test("number() with default", () => {
 
 test("number() accepts values supported by Number()", () => {
 	let n = number({ default: 7 })
+	expect(n.parse("")).toBe(0)
+	expect(n.parse(" \t\n ")).toBe(0)
 	expect(n.parse("   42 ")).toBe(42)
 	expect(n.parse("0x10")).toBe(16)
 	expect(n.parse("Infinity")).toBe(Number.POSITIVE_INFINITY)
+	expect(n.parse("-Infinity")).toBe(Number.NEGATIVE_INFINITY)
+	expect(n.parse("1e999")).toBe(Number.POSITIVE_INFINITY)
+	expect(n.parse("NaN")).toBe(7)
+})
+
+test("number() can reject blank attributes without rejecting infinity", () => {
+	let n = number({ default: 7, rejectEmpty: true })
+	let nullable = number({ rejectEmpty: true })
+	for (let value of ["", " \t\n "]) {
+		expect(n.parse(value)).toBe(7)
+		expect(nullable.parse(value)).toBe(null)
+	}
+	expect(n.parse("0")).toBe(0)
+	expect(n.parse(" 42 ")).toBe(42)
+	expect(n.parse("Infinity")).toBe(Number.POSITIVE_INFINITY)
+})
+
+test("number() can reject non-finite values without rejecting blank attributes", () => {
+	let n = number({ default: 7, finite: true })
+	let nullable = number({ finite: true })
+	for (let value of ["NaN", "Infinity", "-Infinity", "1e999", "-1e999"]) {
+		expect(n.parse(value)).toBe(7)
+		expect(nullable.parse(value)).toBe(null)
+	}
+	expect(n.parse("")).toBe(0)
+	expect(n.parse(" \t\n ")).toBe(0)
+	expect(n.parse("0")).toBe(0)
+	expect(n.parse("-12.5")).toBe(-12.5)
+	expect(n.parse("1e3")).toBe(1000)
+})
+
+test.each([
+	NaN,
+	Infinity,
+	-Infinity,
+])("number() rejects a non-finite default %s when finite is enabled", (defaultValue) => {
+	expect(() => number({ default: defaultValue, finite: true })).toThrow(
+		RangeError,
+	)
+})
+
+test("number() can combine blank rejection and finite validation", () => {
+	let n = number({ default: 7, rejectEmpty: true, finite: true })
+	let nullable = number({ default: null, rejectEmpty: true, finite: true })
+	for (let value of [
+		null,
+		"",
+		" \t\n ",
+		"NaN",
+		"Infinity",
+		"-Infinity",
+		"12px",
+	]) {
+		expect(n.parse(value)).toBe(7)
+		expect(nullable.parse(value)).toBe(null)
+	}
+	for (let [value, expected] of [
+		["0", 0],
+		[" 42 ", 42],
+		["-12.5", -12.5],
+		["1e3", 1000],
+		["0x10", 16],
+	] as const) {
+		expect(n.parse(value)).toBe(expected)
+		expect(nullable.parse(value)).toBe(expected)
+	}
+	expect(n.serialize(Infinity)).toBe("Infinity")
+	expect(nullable.serialize(null)).toBe(null)
+})
+
+test("number() restrictions can be explicitly disabled", () => {
+	let n = number({ default: 7, rejectEmpty: false, finite: false })
+	expect(n.parse("")).toBe(0)
+	expect(n.parse(" \t\n ")).toBe(0)
+	expect(n.parse("Infinity")).toBe(Infinity)
+	expect(n.parse("-Infinity")).toBe(-Infinity)
+})
+
+test.each([
+	NaN,
+	Infinity,
+	-Infinity,
+])("number() still allows a non-finite default %s when finite is disabled", (defaultValue) => {
+	expect(number({ default: defaultValue }).parse(null)).toBe(defaultValue)
+	expect(
+		number({ default: defaultValue, finite: false }).parse("invalid"),
+	).toBe(defaultValue)
 })
 
 test("string() without default", () => {

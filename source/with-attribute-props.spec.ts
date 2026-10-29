@@ -1,4 +1,5 @@
 import { expect, expectTypeOf, test } from "vitest"
+import { number } from "./attribute-serializers.ts"
 import { WithAttributeProps } from "./with-attribute-props.ts"
 
 const browserTest = test.skipIf(
@@ -23,6 +24,26 @@ class AttributeTarget {
 		this.#map.delete(name)
 	}
 }
+
+test("numeric attribute props use their fallback for rejected input", () => {
+	const WithRate = WithAttributeProps(AttributeTarget, {
+		rate: number({ default: 60, rejectEmpty: true, finite: true }),
+	})
+	let el = new WithRate()
+	expect(el.rate).toBe(60)
+	el.setAttribute("rate", "")
+	expect(el.rate).toBe(60)
+	el.rate = Infinity
+	expect(el.getAttribute("rate")).toBe("Infinity")
+	expect(el.rate).toBe(60)
+	el.rate = NaN
+	expect(el.rate).toBe(60)
+	el.rate = 0
+	expect(el.getAttribute("rate")).toBe("0")
+	expect(el.rate).toBe(0)
+	el.rate = 24
+	expect(el.rate).toBe(24)
+})
 
 test("WithHTMLAttributes attributes getter and setters", () => {
 	class A extends AttributeTarget {
